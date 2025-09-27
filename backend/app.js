@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import { readdir, stat, rename, rm } from "fs/promises";
+import { createWriteStream } from "fs";
 
 const app = express();
 
@@ -61,6 +62,22 @@ app.get("/files/{*path}", (req, res) => {
   } catch (e) {}
 });
 
+//Upload files
+app.post("/upload/{*path}", (req, res) => {
+  let { path } = req.params;
+
+  const filename = req.headers["x-filename"];
+  let directoryPath = `./storage/${path ? path.splice(1).join("/") : ""}`;
+
+  const fullPath = `${directoryPath}/${filename}`;
+  const writeStream = createWriteStream(fullPath);
+  req.pipe(writeStream);
+
+  writeStream.on("finish", () => {
+    res.status(200).json({ message: "File uploaded successfully" });
+  });
+});
+
 //Rename files
 app.patch("/files/{*filename}", async (req, res) => {
   const { filename } = req.params;
@@ -99,5 +116,5 @@ app.delete("/files/:filename", async (req, res) => {
 });
 
 app.listen(4000, () => {
-  console.log("Server is running on port 4000")
+  console.log("Server is running on port 4000");
 });

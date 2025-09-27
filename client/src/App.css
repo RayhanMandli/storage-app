@@ -114,6 +114,13 @@ body {
   background: #e5f3ff;
 }
 
+.explorer-table .no-file-msg{
+  padding: 2px;
+  text-align: center;
+  color: #999999;
+  font-size: 18px;
+}
+
 .explorer-table tr.selected:hover {
   background: #cce8ff;
 }

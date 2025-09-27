@@ -7,6 +7,10 @@ function DirectoryUI() {
   const [dirItems, setDirItems] = useState([]);
   const [renameBox, setRenameBox] = useState("");
   const [isRenaming, setIsRenaming] = useState(false);
+  const [message, setMessage] = useState('');
+  const [noFilesMsg, setNoFilesMsg] = useState('');
+  const [file, setFile] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
   const { "*": dirPath } = useParams();
 
   async function handleDelete(name) {
@@ -18,7 +22,7 @@ function DirectoryUI() {
       body: JSON.stringify({ filePath: dirPath }),
     });
     const data = await res.json();
-    console.log('data: ', data);
+    console.log("data: ", data);
     setDirItems((prevItems) => prevItems.filter((item) => item.name !== name));
   }
   async function handleRename(oldname) {
@@ -32,7 +36,7 @@ function DirectoryUI() {
       body: JSON.stringify({ newFileName: renameBox, filePath: dirPath }),
     });
     const data = await res.json();
-    console.log('data: ', data);
+    console.log("data: ", data);
     setIsRenaming(false);
     setRenameBox("");
     setDirItems((prevItems) =>
@@ -47,11 +51,44 @@ function DirectoryUI() {
     setRenameBox(oldname);
   };
 
+  const handleFileChange = (e) => {
+    console.log(e.target.files)
+    setFile(e.target.files[0]);
+  };
+
+  const handleFileUpload = async() => {
+    
+     try {
+      const response = await fetch(`${BASE_URL}/upload/${dirPath}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/octet-stream',
+          'X-Filename': file.name, // optional: send original file name
+        },
+        body: file, // sending raw file
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setMessage(data.message);
+        setIsUploading(false)
+      } else {
+        setMessage('Failed to upload file');
+      }
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      setMessage('Error uploading file');
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       const res = await fetch(`${BASE_URL}/${dirPath}`);
       const data = await res.json();
-      console.log('data: ', data);
+      if(data.length === 0){
+        setNoFilesMsg("No Files")
+      }
+      console.log("data: ", data);
       setDirItems(data);
     };
     fetchData();
@@ -61,9 +98,29 @@ function DirectoryUI() {
     <div className="explorer-container">
       <div className="explorer-toolbar">
         <button className="toolbar-btn">New Folder</button>
-        <button className="toolbar-btn">Upload</button>
+        <button
+          className="toolbar-btn"
+          onClick={() => setIsUploading(!isUploading)}
+        >
+          Upload
+        </button>
         <span className="explorer-path">{dirPath || "Root"}</span>
       </div>
+      {isUploading && (
+        <div className="rename-box">
+          <input
+            type="file"
+            onChange={handleFileChange}
+            className="rename-input"
+          />
+          <button className="toolbar-btn" onClick={handleFileUpload}>
+            Ok
+          </button>
+          <button className="toolbar-btn" onClick={() => setIsUploading(false)}>
+            Cancel
+          </button>
+        </div>
+      )}
       {isRenaming && (
         <div className="rename-box">
           <input
@@ -76,6 +133,7 @@ function DirectoryUI() {
           </button>
         </div>
       )}
+      {message && <span>{message}</span>}
       <div className="explorer-table-wrapper">
         <table className="explorer-table">
           <thead>
@@ -87,6 +145,7 @@ function DirectoryUI() {
             </tr>
           </thead>
           <tbody>
+            {noFilesMsg && <div className="no-file-msg">{noFilesMsg}</div>}
             {dirItems.map(({ name, isDir }, i) => (
               <tr key={i}>
                 <td>
