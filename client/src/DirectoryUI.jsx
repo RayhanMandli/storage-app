@@ -7,14 +7,16 @@ function DirectoryUI() {
   const [dirItems, setDirItems] = useState([]);
   const [renameBox, setRenameBox] = useState("");
   const [isRenaming, setIsRenaming] = useState(false);
-  const [message, setMessage] = useState('');
-  const [noFilesMsg, setNoFilesMsg] = useState('');
+  const [message, setMessage] = useState("");
+  const [noFilesMsg, setNoFilesMsg] = useState("");
   const [file, setFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [foldername, setFoldername] = useState("");
   const { "*": dirPath } = useParams();
 
-  async function handleDelete(name) {
-    const res = await fetch(`${BASE_URL}/files/${name}`, {
+  const handleDelete = async (name) => {
+    const res = await fetch(`${BASE_URL}/delete/${name}`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
@@ -24,8 +26,8 @@ function DirectoryUI() {
     const data = await res.json();
     console.log("data: ", data);
     setDirItems((prevItems) => prevItems.filter((item) => item.name !== name));
-  }
-  async function handleRename(oldname) {
+  };
+  const handleRename = async (oldname) => {
     if (!renameBox) return;
     if (oldname === renameBox) return;
     const res = await fetch(`${BASE_URL}/files/${oldname}`, {
@@ -44,7 +46,7 @@ function DirectoryUI() {
         item.name === oldname ? { ...item, name: renameBox } : item
       )
     );
-  }
+  };
 
   const toggleRenameBox = (oldname) => {
     setIsRenaming(!isRenaming);
@@ -52,18 +54,17 @@ function DirectoryUI() {
   };
 
   const handleFileChange = (e) => {
-    console.log(e.target.files)
+    console.log(e.target.files);
     setFile(e.target.files[0]);
   };
 
-  const handleFileUpload = async() => {
-    
-     try {
+  const handleFileUpload = async () => {
+    try {
       const response = await fetch(`${BASE_URL}/upload/${dirPath}`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/octet-stream',
-          'X-Filename': file.name, // optional: send original file name
+          "Content-Type": "application/octet-stream",
+          "X-Filename": file.name, // optional: send original file name
         },
         body: file, // sending raw file
       });
@@ -71,33 +72,62 @@ function DirectoryUI() {
       if (response.ok) {
         const data = await response.json();
         setMessage(data.message);
-        setIsUploading(false)
+        setIsUploading(false);
       } else {
-        setMessage('Failed to upload file');
+        setMessage("Failed to upload file");
       }
     } catch (error) {
-      console.error('Error uploading file:', error);
-      setMessage('Error uploading file');
+      console.error("Error uploading file:", error);
+      setMessage("Error uploading file");
     }
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const res = await fetch(`${BASE_URL}/${dirPath}`);
-      const data = await res.json();
-      if(data.length === 0){
-        setNoFilesMsg("No Files")
+  const handleFolderCreation = async () => {
+    if (!foldername) return;
+
+    try {
+      const response = await fetch(`${BASE_URL}/create-folder`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ foldername, dirPath }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log(data.message);
+        setIsCreating(false);
+        fetchData();
+      } else {
+        console.log("Unable to create directory");
       }
-      console.log("data: ", data);
-      setDirItems(data);
-    };
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  const fetchData = async () => {
+    const res = await fetch(`${BASE_URL}/${dirPath}`);
+    const data = await res.json();
+    if (data.length === 0) {
+      setNoFilesMsg("No Files");
+    }
+    console.log("data: ", data);
+    setDirItems(data);
+  };
+  useEffect(() => {
     fetchData();
   }, [dirPath]);
 
   return (
     <div className="explorer-container">
       <div className="explorer-toolbar">
-        <button className="toolbar-btn">New Folder</button>
+        <button
+          className="toolbar-btn"
+          onClick={() => setIsCreating(!isCreating)}
+        >
+          New Folder
+        </button>
         <button
           className="toolbar-btn"
           onClick={() => setIsUploading(!isUploading)}
@@ -106,6 +136,22 @@ function DirectoryUI() {
         </button>
         <span className="explorer-path">{dirPath || "Root"}</span>
       </div>
+      {isCreating && (
+        <div className="rename-box">
+          <input
+            placeholder="Enter Directory Name"
+            type="text"
+            onChange={(e) => setFoldername(e.target.value)}
+            className="rename-input"
+          />
+          <button className="toolbar-btn" onClick={handleFolderCreation}>
+            Ok
+          </button>
+          <button className="toolbar-btn" onClick={() => setIsUploading(false)}>
+            Cancel
+          </button>
+        </div>
+      )}
       {isUploading && (
         <div className="rename-box">
           <input
@@ -171,12 +217,20 @@ function DirectoryUI() {
                 <td>{isDir ? "Folder" : "File"}</td>
                 <td>
                   {isDir ? (
+                    <>
                     <Link
                       className="action-btn"
                       to={`/${dirPath || "directory"}/${name}`}
                     >
                       Open
                     </Link>
+                    <button
+                        className="action-btn"
+                        onClick={() => handleDelete(name)}
+                      >
+                        Delete
+                      </button>
+                    </>
                   ) : (
                     <>
                       <Link

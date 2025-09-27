@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import { readdir, stat, rename, rm } from "fs/promises";
+import { readdir, stat, rename, rm, mkdir } from "fs/promises";
 import { createWriteStream } from "fs";
 
 const app = express();
@@ -30,6 +30,22 @@ const readDirectory = async (directoryName) => {
   }
   return jsonData;
 };
+
+//Creating Directory
+
+app.post("/create-folder", async (req, res) => {
+  let { foldername, dirPath } = req.body;
+  if (dirPath.startsWith("directory")) {
+    dirPath = dirPath.replace("directory/", "");
+  }
+  let directoryPath = `./storage/${dirPath ? dirPath : ""}/${foldername}`;
+  try {
+    await mkdir(directoryPath);
+    res.status(200).json({ message: "Directory created" });
+  } catch (e) {
+    res.status(400).json({ message: e.message });
+  }
+});
 
 //Serve root directory
 app.get("/", async (req, res) => {
@@ -99,7 +115,7 @@ app.patch("/files/{*filename}", async (req, res) => {
 });
 
 //Delete files
-app.delete("/files/:filename", async (req, res) => {
+app.delete("/delete/:filename", async (req, res) => {
   const { filename } = req.params;
 
   let { filePath } = req.body;
@@ -108,7 +124,10 @@ app.delete("/files/:filename", async (req, res) => {
   }
   // let absolutePath = `${import.meta.dirname}/storage/${filePath}`;
   try {
-    await rm(`./storage/${filePath}/${filename}`);
+    await rm(`./storage/${filePath}/${filename}`, {
+      recursive: true,
+      force: true,
+    });
     res.status(200).json({ message: "file deleted" });
   } catch (e) {
     res.status(400).json({ message: e.message });
