@@ -1,0 +1,11 @@
+{
+    "type": "module",
+    "dependencies": {
+        "@types/node": "^24.5.2",
+        "cors": "^2.8.5",
+        "express": "^5.1.0"
+    },
+    "scripts": {
+        "dev": "node --watch app.js"
+    }
+}

@@ -1,0 +1,139 @@
+ilter()
+
+Creates a new array with only the elements that pass a condition (returns true).
+
+Does not modify the original array.
+
+Example:
+
+const numbers = [1, 2, 3, 4, 5, 6];
+
+const evens = numbers.filter(num => num % 2 === 0);
+console.log(evens); // [2, 4, 6]
+
+🔹 forEach()
+
+Runs a function on each element of an array.
+
+Does not return anything (always undefined).
+
+Used for side effects (logging, updating, etc.).
+
+Example:
+
+const fruits = ["apple", "banana", "mango"];
+
+fruits.forEach(fruit => {
+  console.log(fruit.toUpperCase());
+});
+// APPLE
+// BANANA
+// MANGO
+
+🔹 Combining filter + forEach
+
+You can first filter the array, then loop through the result:
+
+const numbers = [1, 2, 3, 4, 5, 6];
+
+numbers
+  .filter(num => num % 2 === 0)   // take only even numbers
+  .forEach(evenNum => {
+    console.log(evenNum * 2);     // double them
+  });
+
+// Output:
+// 4
+// 8
+// 12
+
+
+⚡ In short:
+
+filter → select elements
+
+forEach → do something with them
+
+Do you want me to also show you when map is better than using filter + forEach together?
+
+You said:
+how can i share a string and also a json object to client in tcp nodejs, how to handle the on data event in client.js
+ChatGPT said:
+
+Great question ⚡ Let’s break this down:
+
+You’re using raw TCP (not HTTP) in Node.js. With TCP, data is just a stream of bytes — so if you want to send a string and a JSON object together, you need a protocol to separate them, otherwise the client won’t know where one ends and the other starts.
+
+🔹 Server (example)
+const net = require("net");
+
+const server = net.createServer(socket => {
+  console.log("Client connected");
+
+  // Example string
+  const message = "Hello Client!";
+
+  // Example JSON object
+  const obj = { id: 1, name: "Rayhan" };
+
+  // Send both as JSON with a delimiter (e.g., newline)
+  socket.write(JSON.stringify({ type: "string", data: message }) + "\n");
+  socket.write(JSON.stringify({ type: "json", data: obj }) + "\n");
+});
+
+server.listen(4000, () => {
+  console.log("Server running on port 4000");
+});
+
+🔹 Client
+const net = require("net");
+
+const client = net.createConnection({ port: 4000 }, () => {
+  console.log("Connected to server");
+});
+
+let buffer = ""; // to store incomplete data
+
+client.on("data", (chunk) => {
+  buffer += chunk.toString(); // append received chunk
+
+  // Split by newline (our chosen delimiter)
+  let parts = buffer.split("\n");
+
+  // Keep the last incomplete piece in buffer
+  buffer = parts.pop();
+
+  // Handle complete messages
+  parts.forEach(part => {
+    if (part.trim()) {
+      try {
+        const parsed = JSON.parse(part);
+        if (parsed.type === "string") {
+          console.log("Got string:", parsed.data);
+        } else if (parsed.type === "json") {
+          console.log("Got JSON object:", parsed.data);
+        }
+      } catch (err) {
+        console.error("Invalid JSON:", part);
+      }
+    }
+  });
+});
+
+client.on("end", () => {
+  console.log("Disconnected from server");
+});
+
+🔑 Key Points
+
+TCP is a stream — data may come in chunks or multiple messages in one chunk. That’s why we use a delimiter (\n here).
+
+Always buffer and parse messages carefully.
+
+You can design your own mini-protocol — e.g.,
+
+JSON with a type field (like above).
+
+Or length-prefixed messages.
+
+👉 Do you want me to also show you the length-prefixed approach (more robust than using \n), or is the newline-delimited JSON good enough for your use case?
