@@ -29,6 +29,7 @@ export const readDirectory = async (directoryName) => {
 //Serve sub directories
 router.get("/{*dirname}", async (req, res) => {
   const { dirname } = req.params;
+  console.log("hellow")
 
   res.json(await readDirectory(dirname.join("/")));
 });

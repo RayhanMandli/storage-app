@@ -1,41 +1,41 @@
 import express from "express";
-import {rename} from "fs/promises";
+import { writeFile } from "fs/promises";
+import filesData from "../db/fileDB.json" with { type: "json" };
 
 const router = express.Router();
 
 //Serve files
-router.get("/{*path}", (req, res) => {
-  const { path } = req.params;
+router.get("/:id", (req, res) => {
+  const { id } = req.params;
   const { action } = req.query;
+
+  const file = filesData.find((file) => file.id === id);
+
+  if (!file) return res.status(404).json({ message: "File not found" });
 
   if (action == "download") {
     res.set("Content-Disposition", "attachment");
   }
-  if (
-    path[path.length - 1].endsWith(".mp4") ||
-    path[path.length - 1].endsWith(".mkv")
-  ) {
-    res.set("Content-Type", "video/mp4");
-  }
+
   try {
-    res.sendFile(`${import.meta.dirname}/storage/${path.splice(1).join("/")}`);
-  } catch (e) {}
+    res.sendFile(`${process.cwd()}/storage/${id}${file.extension}`);
+  } catch (e) {
+    res.status(400).json({ message: e.message });
+  }
 });
 
 //Rename files
-router.patch("/{*filename}", async (req, res) => {
-  const { filename } = req.params;
+router.patch("/:id", async (req, res) => {
+  const { id } = req.params;
 
-  let { newFileName, filePath } = req.body;
-  if (filePath.startsWith("directory")) {
-    filePath = filePath.replace("directory/", "");
-  }
-  let absolutePath = `${import.meta.dirname}/storage/${filePath}`;
+  let { newFileName } = req.body;
+
   try {
-    await rename(
-      `${absolutePath}/${filename}`,
-      `${absolutePath}/${newFileName}`
-    );
+    let file = filesData.find((file) => file.id === id);
+    if (!file) return res.status(404).json({ message: "File not found" });
+    file.filename = newFileName;
+
+    await writeFile("./db/fileDB.json", JSON.stringify(filesData, null, 2));
     res.status(200).json({ message: "file renamed" });
   } catch (e) {
     res.status(400).json({ message: e.message });

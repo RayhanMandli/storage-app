@@ -1,22 +1,29 @@
+console.log("Delete route module loaded");
+
 import express from "express";
-import { rm } from "fs/promises";
+import { rm, writeFile } from "fs/promises";
+import filesData from "../db/fileDB.json" with { type: "json" };
 
 const router = express.Router();
 
 //Delete files
-router.delete("/:filename", async (req, res) => {
-  const { filename } = req.params;
+router.delete("/:id", async (req, res) => {
+  const { id } = req.params;
+  const file = filesData.find(f => f.id === id);
+  console.log(file)
+  console.log(filesData)
+  const { extension } = file;
+  console.log("{id, extension}: ", { id, extension });
 
-  let { filePath } = req.body;
-  if (filePath.startsWith("directory")) {
-    filePath = filePath.replace("directory/", "");
-  }
-  // let absolutePath = `${import.meta.dirname}/storage/${filePath}`;
   try {
-    await rm(`./storage/${filePath}/${filename}`, {
-      recursive: true,
+    await rm(`./storage/${id}${extension}`, {
       force: true,
     });
+
+    filesData.splice(filesData.indexOf(file), 1);
+
+    await writeFile("./db/fileDB.json", JSON.stringify(filesData, null, 2));
+
     res.status(200).json({ message: "file deleted" });
   } catch (e) {
     res.status(400).json({ message: e.message });
