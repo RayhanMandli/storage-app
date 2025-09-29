@@ -1,5 +1,7 @@
 import express from "express";
-import { readdir, stat} from "fs/promises";
+import { readdir, stat, writeFile} from "fs/promises";
+import directoriesData from "../db/directoryDB.json" with { type: "json" };
+import filesData from "../db/fileDB.json" with { type: "json" };
 
 const router = express.Router();
 
@@ -25,6 +27,36 @@ export const readDirectory = async (directoryName) => {
   }
   return jsonData;
 };
+
+router.get("/{:id}", (req,res)=>{
+  const id = req.params.id || 'root';
+
+  const directoryData = directoriesData.find(dir=>dir.id===id);
+
+  const files = directoryData.files.map(fileId =>{
+    return filesData.find(file=>file.id===fileId)
+  })
+
+  res.json({...directoryData, files})
+
+})
+
+router.post("/:dirname", async(req,res)=>{
+  const parentDirId = req.headers.parentdirid || 'root';
+  const id = crypto.randomUUID();
+  const {dirname} = req.params;
+
+  const parentDir = directoriesData.find(dir=>dir.id===parentDirId);
+  if(!parentDir) return res.status(400).json({message: "Parent directory not found"})
+  parentDir.directories.push(id);
+  directoriesData.push({id, name: dirname, pDir: parentDirId, files: [], directories: []})
+  try{
+    await writeFile("./db/directoryDB.json", JSON.stringify(directoriesData, null, 2));
+    res.status(200).json({message: "Directory created successfully"})
+  }catch(e){
+    return res.status(500).json({ message: "Error creating directory" });
+  }
+})
 
 //Serve sub directories
 router.get("/{*dirname}", async (req, res) => {

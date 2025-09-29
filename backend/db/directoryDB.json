@@ -2,9 +2,8 @@
   {
     "id": "root",
     "name": "root",
-    "files": [
-      "31653ec2-4f87-4205-b5e6-0a27543b6ac9"
-    ],
+    "pDir": null,
+    "files": [],
     "directories": []
   }
 ]

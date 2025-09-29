@@ -3,11 +3,13 @@ console.log("Delete route module loaded");
 import express from "express";
 import { rm, writeFile } from "fs/promises";
 import filesData from "../db/fileDB.json" with { type: "json" };
+import directoriesData from "../db/directoryDB.json" with { type: "json" };
 
 const router = express.Router();
 
 //Delete files
 router.delete("/:id", async (req, res) => {
+  const parentDirId = req.headers['parentdirid'] || 'root';
   const { id } = req.params;
   const file = filesData.find(f => f.id === id);
   console.log(file)
@@ -21,7 +23,11 @@ router.delete("/:id", async (req, res) => {
     });
 
     filesData.splice(filesData.indexOf(file), 1);
+    const parentDir = directoriesData.find(dir => dir.id === parentDirId);
+    const files = parentDir.files.filter(fileId => fileId !== id);
+    parentDir.files = files;
 
+    await writeFile("./db/directoryDB.json", JSON.stringify(directoriesData, null, 2));
     await writeFile("./db/fileDB.json", JSON.stringify(filesData, null, 2));
 
     res.status(200).json({ message: "file deleted" });
