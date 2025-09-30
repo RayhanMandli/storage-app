@@ -28,12 +28,12 @@ router.get("/:id", (req, res) => {
 router.patch("/:id", async (req, res) => {
   const { id } = req.params;
 
-  let { newFileName } = req.body;
+  let { newName } = req.body;
 
   try {
     let file = filesData.find((file) => file.id === id);
     if (!file) return res.status(404).json({ message: "File not found" });
-    file.filename = newFileName;
+    file.filename = newName;
 
     await writeFile("./db/fileDB.json", JSON.stringify(filesData, null, 2));
     res.status(200).json({ message: "file renamed" });

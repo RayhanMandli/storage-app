@@ -6,7 +6,7 @@ import { useContext } from "react";
 
 function DirectoryUI() {
   const { routesDisplay, setRoutesDisplay } = useContext(DirectoryContext);
-  const BASE_URL = "http://192.168.83.137:4000";
+  const BASE_URL = "http://localhost:4000";
   const [dirItems, setDirItems] = useState([]);
   const [renameBox, setRenameBox] = useState("");
   const [isRenaming, setIsRenaming] = useState(false);
@@ -18,27 +18,31 @@ function DirectoryUI() {
   const [foldername, setFoldername] = useState("");
   let { "*": dirPath } = useParams();
 
-  const handleDelete = async (pId, fileId) => {
-    const res = await fetch(`${BASE_URL}/delete/${fileId}`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-        parentdirid: pId,
-      },
-    });
+  const handleDelete = async (pId, fileId, type) => {
+    const res = await fetch(
+      `${BASE_URL}/delete/${fileId}${type === "file" ? "?type=file" : ""}`,
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          parentdirid: pId,
+        },
+      }
+    );
     const data = await res.json();
+    setMessage(data.message);
     console.log("data: ", data);
     fetchData();
   };
-  const handleRename = async (oldname, fileId) => {
+  const handleRename = async (oldname, Id, type) => {
     if (!renameBox) return;
     if (oldname === renameBox) return;
-    const res = await fetch(`${BASE_URL}/files/${fileId}`, {
+    const res = await fetch(`${BASE_URL}/${type === "file"? "files": "directory"}/${Id}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ newFileName: renameBox }),
+      body: JSON.stringify({ newName: renameBox }),
     });
     const data = await res.json();
     console.log("data: ", data);
@@ -94,7 +98,7 @@ function DirectoryUI() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "parentdirid": dirPath ? dirPath.replace("directory/", "") : "root",
+          parentdirid: dirPath ? dirPath.replace("directory/", "") : "root",
         },
       });
 
@@ -210,7 +214,7 @@ function DirectoryUI() {
           </thead>
           <tbody>
             {noFilesMsg && <div className="no-file-msg">{noFilesMsg}</div>}
-            {dirItems?.directories?.map(({ name, id }, i) => (
+            {dirItems?.directories?.map(({ pDir,name, id }, i) => (
               <tr key={i}>
                 <td>
                   <span role="img" aria-label="folder">
@@ -230,9 +234,21 @@ function DirectoryUI() {
                 <td> Folder </td>
                 <td>
                   <>
+                   <button
+                      className="action-btn"
+                      onClick={() => toggleRenameBox(name)}
+                    >
+                      Rename
+                    </button>
                     <button
                       className="action-btn"
-                      onClick={() => handleDelete(name)}
+                      onClick={() => handleRename(name, id,"folder")}
+                    >
+                      Save
+                    </button>
+                    <button
+                      className="action-btn"
+                      onClick={() => handleDelete(pDir,id)}
                     >
                       Delete
                     </button>
@@ -253,12 +269,6 @@ function DirectoryUI() {
                 <td> File </td>
                 <td>
                   <>
-                    <Link
-                      className="action-btn"
-                      to={`${BASE_URL}/files/${id}?action=download`}
-                    >
-                      Download
-                    </Link>
                     <button
                       className="action-btn"
                       onClick={() => toggleRenameBox(filename)}
@@ -267,16 +277,22 @@ function DirectoryUI() {
                     </button>
                     <button
                       className="action-btn"
-                      onClick={() => handleRename(filename, id)}
+                      onClick={() => handleRename(filename, id,"file")}
                     >
                       Save
                     </button>
                     <button
                       className="action-btn"
-                      onClick={() => handleDelete(pDir, id)}
+                      onClick={() => handleDelete(pDir, id, "file")}
                     >
                       Delete
                     </button>
+                    <Link
+                      className="action-btn"
+                      to={`${BASE_URL}/files/${id}?action=download`}
+                    >
+                      Download
+                    </Link>
                   </>
                 </td>
                 <td>{createdAt.slice(0, 10)}</td>

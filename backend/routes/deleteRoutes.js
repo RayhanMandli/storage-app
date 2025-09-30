@@ -5,15 +5,9 @@ import directoriesData from "../db/directoryDB.json" with { type: "json" };
 
 const router = express.Router();
 
-//Delete files
-router.delete("/:id", async (req, res) => {
-  const parentDirId = req.headers['parentdirid'] || 'root';
-  const { id } = req.params;
-  const file = filesData.find(f => f.id === id);
-  console.log(file)
-  console.log(filesData)
+const deleteFile = async (id, parentDirId, dirDelete) => {
+  const file = filesData.find((f) => f.id === id);
   const { extension } = file;
-  console.log("{id, extension}: ", { id, extension });
 
   try {
     await rm(`./storage/${id}${extension}`, {
@@ -21,16 +15,56 @@ router.delete("/:id", async (req, res) => {
     });
 
     filesData.splice(filesData.indexOf(file), 1);
-    const parentDir = directoriesData.find(dir => dir.id === parentDirId);
-    const files = parentDir.files.filter(fileId => fileId !== id);
-    parentDir.files = files;
-
-    await writeFile("./db/directoryDB.json", JSON.stringify(directoriesData, null, 2));
+    if (!dirDelete) {
+      const parentDir = directoriesData.find((d) => d.id === parentDirId);
+      const remainingFiles = parentDir.files.filter((fileId) => fileId !== id);
+      parentDir.files = remainingFiles;
+      await writeFile(
+        "./db/directoryDB.json",
+        JSON.stringify(directoriesData, null, 2)
+      );
+    }
     await writeFile("./db/fileDB.json", JSON.stringify(filesData, null, 2));
-
-    res.status(200).json({ message: "file deleted" });
   } catch (e) {
-    res.status(400).json({ message: e.message });
+    return { success: false, message: e.message };
+  }
+};
+
+//Delete files
+router.delete("/:id", async (req, res) => {
+  const parentDirId = req.headers["parentdirid"] || "root";
+  const { type } = req.query;
+  const { id } = req.params;
+
+  if (type === "file") {
+    const result = await deleteFile(id, parentDirId, false);
+    if (!result.success) {
+      return res.status(500).json({ message: result.message });
+    }
+    res.status(200).json({ message: "file deleted" });
+  } else {
+    const dir = directoriesData.find((d) => d.id === id);
+    if (!dir) return res.status(404).json({ message: "Directory not found" });
+
+    if (dir.files.length > 0) {
+      dir.files.forEach(async (fileId) => {
+        await deleteFile(fileId, id, true);
+      });
+    }
+    const index = directoriesData.indexOf(dir);
+    directoriesData.splice(index, 1);
+    const parentDir = directoriesData.find((d) => d.id === parentDirId);
+    const subdirs = parentDir.directories.filter((subdirId) => subdirId !== id);
+    parentDir.directories = subdirs;
+    try {
+      await writeFile(
+        "./db/directoryDB.json",
+        JSON.stringify(directoriesData, null, 2)
+      );
+      res.status(200).json({ message: "Directory deleted" });
+    } catch (e) {
+      res.status(500).json({ message: e.message });
+    }
   }
 });
 

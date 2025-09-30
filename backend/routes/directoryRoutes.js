@@ -64,12 +64,18 @@ router.post("/:dirname", async(req,res)=>{
   }
 })
 
-//Serve sub directories
-router.get("/{*dirname}", async (req, res) => {
-  const { dirname } = req.params;
-  console.log("hellow")
-
-  res.json(await readDirectory(dirname.join("/")));
-});
+router.patch("/:id", async(req,res)=>{
+  const {newName} = req.body;
+  const {id} = req.params;
+  const dir = directoriesData.find(d=>d.id===id);
+  if(!dir) return res.status(404).json({message: "Directory not found"});
+  dir.name = newName;
+  try{
+    await writeFile("./db/directoryDB.json", JSON.stringify(directoriesData, null, 2));
+    res.status(200).json({message: "Directory renamed successfully"})
+  }catch(e){
+    return res.status(500).json({ message: "Error renaming directory" });
+  }
+})
 
 export default router;
