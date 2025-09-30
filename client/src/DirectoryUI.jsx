@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 import "./App.css";
 import { Link, useParams } from "react-router-dom";
+import { DirectoryContext } from "./contexts/DirectoryContexts";
+import { useContext } from "react";
 
 function DirectoryUI() {
+  const { routesDisplay, setRoutesDisplay } = useContext(DirectoryContext);
   const BASE_URL = "http://192.168.83.137:4000";
   const [dirItems, setDirItems] = useState([]);
   const [renameBox, setRenameBox] = useState("");
@@ -13,39 +16,35 @@ function DirectoryUI() {
   const [isUploading, setIsUploading] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [foldername, setFoldername] = useState("");
-  const { "*": dirPath } = useParams();
+  let { "*": dirPath } = useParams();
 
-  const handleDelete = async (name) => {
-    const res = await fetch(`${BASE_URL}/delete/${name}`, {
+  const handleDelete = async (pId, fileId) => {
+    const res = await fetch(`${BASE_URL}/delete/${fileId}`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
+        parentdirid: pId,
       },
-      body: JSON.stringify({ filePath: dirPath }),
     });
     const data = await res.json();
     console.log("data: ", data);
-    setDirItems((prevItems) => prevItems.filter((item) => item.name !== name));
+    fetchData();
   };
-  const handleRename = async (oldname) => {
+  const handleRename = async (oldname, fileId) => {
     if (!renameBox) return;
     if (oldname === renameBox) return;
-    const res = await fetch(`${BASE_URL}/files/${oldname}`, {
+    const res = await fetch(`${BASE_URL}/files/${fileId}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ newFileName: renameBox, filePath: dirPath }),
+      body: JSON.stringify({ newFileName: renameBox }),
     });
     const data = await res.json();
     console.log("data: ", data);
     setIsRenaming(false);
     setRenameBox("");
-    setDirItems((prevItems) =>
-      prevItems.map((item) =>
-        item.name === oldname ? { ...item, name: renameBox } : item
-      )
-    );
+    fetchData();
   };
 
   const toggleRenameBox = (oldname) => {
@@ -58,13 +57,17 @@ function DirectoryUI() {
     setFile(e.target.files[0]);
   };
 
-  const handleFileUpload = async () => {
+  const handleFileUpload = async (pId, filename) => {
+    if (!pId) pId = "root";
+    if (!file) return;
+    setMessage("");
+    setIsUploading(true);
     try {
-      const response = await fetch(`${BASE_URL}/upload/${dirPath}`, {
+      const response = await fetch(`${BASE_URL}/upload/${filename}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/octet-stream",
-          "X-Filename": file.name, // optional: send original file name
+          parentdirid: pId,
         },
         body: file, // sending raw file
       });
@@ -73,6 +76,7 @@ function DirectoryUI() {
         const data = await response.json();
         setMessage(data.message);
         setIsUploading(false);
+        fetchData();
       } else {
         setMessage("Failed to upload file");
       }
@@ -86,12 +90,12 @@ function DirectoryUI() {
     if (!foldername) return;
 
     try {
-      const response = await fetch(`${BASE_URL}/create-folder`, {
+      const response = await fetch(`${BASE_URL}/directory/${foldername}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "parentdirid": dirPath ? dirPath.replace("directory/", "") : "root",
         },
-        body: JSON.stringify({ foldername, dirPath }),
       });
 
       if (response.ok) {
@@ -107,7 +111,7 @@ function DirectoryUI() {
     }
   };
   const fetchData = async () => {
-    const res = await fetch(`${BASE_URL}/${dirPath}`);
+    const res = await fetch(`${BASE_URL}/${dirPath ? dirPath : "directory"}`);
     const data = await res.json();
     if (data.length === 0) {
       setNoFilesMsg("No Files");
@@ -134,7 +138,7 @@ function DirectoryUI() {
         >
           Upload
         </button>
-        <span className="explorer-path">{dirPath || "Root"}</span>
+        <span className="explorer-path">{routesDisplay || "/"}</span>
       </div>
       {isCreating && (
         <div className="rename-box">
@@ -154,17 +158,30 @@ function DirectoryUI() {
       )}
       {isUploading && (
         <div className="rename-box">
-          <input
-            type="file"
-            onChange={handleFileChange}
-            className="rename-input"
-          />
-          <button className="toolbar-btn" onClick={handleFileUpload}>
-            Ok
-          </button>
-          <button className="toolbar-btn" onClick={() => setIsUploading(false)}>
-            Cancel
-          </button>
+          <div>
+            <input
+              type="file"
+              onChange={handleFileChange}
+              className="rename-input"
+            />
+            <button
+              className="toolbar-btn"
+              onClick={() =>
+                handleFileUpload(
+                  dirPath ? dirPath.replace("directory/", "") : "root",
+                  file ? file.name : ""
+                )
+              }
+            >
+              Ok
+            </button>
+            <button
+              className="toolbar-btn"
+              onClick={() => setIsUploading(false)}
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       )}
       {isRenaming && (
@@ -188,84 +205,81 @@ function DirectoryUI() {
               <th>Name</th>
               <th>Type</th>
               <th>Actions</th>
+              <th>Created At</th>
             </tr>
           </thead>
           <tbody>
             {noFilesMsg && <div className="no-file-msg">{noFilesMsg}</div>}
-            {dirItems.map(({ name, isDir }, i) => (
+            {dirItems?.directories?.map(({ name, id }, i) => (
               <tr key={i}>
                 <td>
-                  {isDir ? (
-                    <span role="img" aria-label="folder">
-                      📁
-                    </span>
-                  ) : (
-                    <span role="img" aria-label="file">
-                      📄
-                    </span>
-                  )}
+                  <span role="img" aria-label="folder">
+                    📁
+                  </span>
                 </td>
                 <td className="file-name">
-                  {isDir ? (
-                    <Link to={`/${dirPath || "directory"}/${name}`}>
-                      {name}
-                    </Link>
-                  ) : (
-                    name
-                  )}
+                  <Link
+                    to={`/directory/${id}`}
+                    onClick={() =>
+                      setRoutesDisplay((prevRoute) => prevRoute + `/${name}`)
+                    }
+                  >
+                    {name}
+                  </Link>
                 </td>
-                <td>{isDir ? "Folder" : "File"}</td>
+                <td> Folder </td>
                 <td>
-                  {isDir ? (
-                    <>
+                  <>
+                    <button
+                      className="action-btn"
+                      onClick={() => handleDelete(name)}
+                    >
+                      Delete
+                    </button>
+                  </>
+                </td>
+              </tr>
+            ))}
+            {dirItems?.files?.map(({ filename, id, createdAt, pDir }, i) => (
+              <tr key={i}>
+                <td>
+                  <span role="img" aria-label="file">
+                    📄
+                  </span>
+                </td>
+                <td className="file-name">
+                  <Link to={`${BASE_URL}/files/${id}`}>{filename}</Link>
+                </td>
+                <td> File </td>
+                <td>
+                  <>
                     <Link
                       className="action-btn"
-                      to={`/${dirPath || "directory"}/${name}`}
+                      to={`${BASE_URL}/files/${id}?action=download`}
                     >
-                      Open
+                      Download
                     </Link>
                     <button
-                        className="action-btn"
-                        onClick={() => handleDelete(name)}
-                      >
-                        Delete
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <Link
-                        className="action-btn"
-                        to={`${BASE_URL}/files/${dirPath}/${name}`}
-                      >
-                        Open
-                      </Link>
-                      <Link
-                        className="action-btn"
-                        to={`${BASE_URL}/files/${dirPath}/${name}?action=download`}
-                      >
-                        Download
-                      </Link>
-                      <button
-                        className="action-btn"
-                        onClick={() => toggleRenameBox(name)}
-                      >
-                        Rename
-                      </button>
-                      <button
-                        className="action-btn"
-                        onClick={() => handleRename(name)}
-                      >
-                        Save
-                      </button>
-                      <button
-                        className="action-btn"
-                        onClick={() => handleDelete(name)}
-                      >
-                        Delete
-                      </button>
-                    </>
-                  )}
+                      className="action-btn"
+                      onClick={() => toggleRenameBox(filename)}
+                    >
+                      Rename
+                    </button>
+                    <button
+                      className="action-btn"
+                      onClick={() => handleRename(filename, id)}
+                    >
+                      Save
+                    </button>
+                    <button
+                      className="action-btn"
+                      onClick={() => handleDelete(pDir, id)}
+                    >
+                      Delete
+                    </button>
+                  </>
                 </td>
+                <td>{createdAt.slice(0, 10)}</td>
               </tr>
             ))}
           </tbody>

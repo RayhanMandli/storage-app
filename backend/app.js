@@ -1,7 +1,5 @@
 import express from "express";
 import cors from "cors";
-import {mkdir } from "fs/promises";
-import { readDirectory } from "./routes/directoryRoutes.js";
 import directoryRoutes from "./routes/directoryRoutes.js";
 import deleteRoutes from "./routes/deleteRoutes.js";
 import filesRoutes from "./routes/filesRoutes.js";
@@ -19,25 +17,25 @@ app.use("/delete", deleteRoutes);
 app.use("/files", filesRoutes);
 app.use("/upload", uploadRoutes);
 
-//Creating Directory
-app.post("/create-folder", async (req, res) => {
-  let { foldername, dirPath } = req.body;
-  if (dirPath.startsWith("directory")) {
-    dirPath = dirPath.replace("directory/", "");
-  }
-  let directoryPath = `./storage/${dirPath ? dirPath : ""}/${foldername}`;
-  try {
-    await mkdir(directoryPath);
-    res.status(200).json({ message: "Directory created" });
-  } catch (e) {
-    res.status(400).json({ message: e.message });
-  }
-});
+// //Creating Directory
+// app.post("/create-folder", async (req, res) => {
+//   let { foldername, dirPath } = req.body;
+//   if (dirPath.startsWith("directory")) {
+//     dirPath = dirPath.replace("directory/", "");
+//   }
+//   let directoryPath = `./storage/${dirPath ? dirPath : ""}/${foldername}`;
+//   try {
+//     await mkdir(directoryPath);
+//     res.status(200).json({ message: "Directory created" });
+//   } catch (e) {
+//     res.status(400).json({ message: e.message });
+//   }
+// });
 
-//Serve root directory
-app.get("/", async (req, res) => {
-  res.json(await readDirectory());
-});
+// //Serve root directory
+// app.get("/", async (req, res) => {
+//   res.json(await readDirectory());
+// });
 
 //Starting the server
 app.listen(4000, () => {

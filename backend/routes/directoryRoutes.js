@@ -5,28 +5,30 @@ import filesData from "../db/fileDB.json" with { type: "json" };
 
 const router = express.Router();
 
-//Function to read directory and return files and folders
-export const readDirectory = async (directoryName) => {
-  let directoryPath = `./storage/${directoryName ? directoryName : ""}`;
-  let files = await readdir(directoryPath);
-  let jsonData = [];
+// //Function to read directory and return files and folders
+// export const readDirectory = async (directoryName) => {
+//   let directoryPath = `./storage/${directoryName ? directoryName : ""}`;
+//   let files = await readdir(directoryPath);
+//   let jsonData = [];
 
-  for (const file of files) {
-    try {
-      const stats = await stat(`${directoryPath}/${file}`);
+//   for (const file of files) {
+//     try {
+//       const stats = await stat(`${directoryPath}/${file}`);
 
-      jsonData.push({ name: file, isDir: stats.isDirectory() });
-      jsonData.sort((a, b) => {
-        if (a.isDir && !b.isDir) return -1;
-        if (!a.isDir && b.isDir) return 1;
-        return a.name.localeCompare(b.name);
-      });
-    } catch (e) {
-      res.status(400).json({ message: e.message });
-    }
-  }
-  return jsonData;
-};
+//       jsonData.push({ name: file, isDir: stats.isDirectory() });
+//       jsonData.sort((a, b) => {
+//         if (a.isDir && !b.isDir) return -1;
+//         if (!a.isDir && b.isDir) return 1;
+//         return a.name.localeCompare(b.name);
+//       });
+//     } catch (e) {
+//       res.status(400).json({ message: e.message });
+//     }
+//   }
+//   return jsonData;
+// };
+
+
 
 router.get("/{:id}", (req,res)=>{
   const id = req.params.id || 'root';
@@ -37,7 +39,11 @@ router.get("/{:id}", (req,res)=>{
     return filesData.find(file=>file.id===fileId)
   })
 
-  res.json({...directoryData, files})
+  const directories = directoryData.directories.map(dirId=>{
+    return directoriesData.find(dir=>dir.id===dirId)
+  })
+
+  res.json({...directoryData, files, directories});
 
 })
 

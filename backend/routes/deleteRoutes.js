@@ -1,5 +1,3 @@
-console.log("Delete route module loaded");
-
 import express from "express";
 import { rm, writeFile } from "fs/promises";
 import filesData from "../db/fileDB.json" with { type: "json" };

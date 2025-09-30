@@ -1,16 +1,19 @@
-import React from 'react'
-
-import { createBrowserRouter, RouterProvider } from 'react-router-dom'
-import DirectoryUI from './DirectoryUI'
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import DirectoryUI from "./DirectoryUI";
+import { DirectoryContextProvider } from "./contexts/DirectoryContexts";
 
 const App = () => {
-  const router = createBrowserRouter([{
-    path: "/*",
-    element: <DirectoryUI/>
-  }])
+  const router = createBrowserRouter([
+    {
+      path: "/*",
+      element: <DirectoryUI />,
+    },
+  ]);
   return (
-    <RouterProvider router={router}/>
-  )
-}
+    <DirectoryContextProvider>
+      <RouterProvider router={router} />
+    </DirectoryContextProvider>
+  );
+};
 
-export default App
+export default App;
