@@ -1,5 +1,5 @@
 import express from "express";
-import { readdir, stat, writeFile} from "fs/promises";
+import {writeFile} from "fs/promises";
 import directoriesData from "../db/directoryDB.json" with { type: "json" };
 import filesData from "../db/fileDB.json" with { type: "json" };
 
@@ -31,9 +31,14 @@ const router = express.Router();
 
 
 router.get("/{:id}", (req,res)=>{
-  const id = req.params.id || 'root';
+  const userId = req.user.id;
+  const userRootDirId = req.user.rootDirId;
+  const dirid = req.params.id || userRootDirId;
 
-  const directoryData = directoriesData.find(dir=>dir.id===id);
+  const directoryData = directoriesData.find(dir=>dir.id===dirid);
+
+  if(directoryData.userId !== userId) return res.status(403).json({message: "Forbidden"});
+  if(!directoryData) return res.status(404).json({message: "Directory not found"});
 
   const files = directoryData.files.map(fileId =>{
     return filesData.find(file=>file.id===fileId)
@@ -48,14 +53,16 @@ router.get("/{:id}", (req,res)=>{
 })
 
 router.post("/:dirname", async(req,res)=>{
-  const parentDirId = req.headers.parentdirid || 'root';
+  const userId = req.user.id;
+  const userRootDirId = req.user.rootDirId;
+  const parentDirId = req.headers.parentdirid || userRootDirId;
   const id = crypto.randomUUID();
   const {dirname} = req.params;
 
   const parentDir = directoriesData.find(dir=>dir.id===parentDirId);
   if(!parentDir) return res.status(400).json({message: "Parent directory not found"})
   parentDir.directories.push(id);
-  directoriesData.push({id, name: dirname, pDir: parentDirId, files: [], directories: []})
+  directoriesData.push({id, name: dirname, pDir: parentDirId, userId, files: [], directories: []})
   try{
     await writeFile("./db/directoryDB.json", JSON.stringify(directoriesData, null, 2));
     res.status(200).json({message: "Directory created successfully"})

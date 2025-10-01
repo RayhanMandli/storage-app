@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import "./App.css";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { DirectoryContext } from "./contexts/DirectoryContexts";
 import { useContext } from "react";
 
@@ -17,7 +17,18 @@ function DirectoryUI() {
   const [isCreating, setIsCreating] = useState(false);
   const [foldername, setFoldername] = useState("");
   let { "*": dirPath } = useParams();
+  const navigate = useNavigate();
+  //utility functions
+  const toggleRenameBox = (oldname) => {
+    setIsRenaming(!isRenaming);
+    setRenameBox(oldname);
+  };
+  const handleFileChange = (e) => {
+    console.log(e.target.files);
+    setFile(e.target.files[0]);
+  };
 
+  //apis calling
   const handleDelete = async (pId, fileId, type) => {
     const res = await fetch(
       `${BASE_URL}/delete/${fileId}${type === "file" ? "?type=file" : ""}`,
@@ -27,6 +38,7 @@ function DirectoryUI() {
           "Content-Type": "application/json",
           parentdirid: pId,
         },
+        credentials: "include",
       }
     );
     const data = await res.json();
@@ -37,30 +49,23 @@ function DirectoryUI() {
   const handleRename = async (oldname, Id, type) => {
     if (!renameBox) return;
     if (oldname === renameBox) return;
-    const res = await fetch(`${BASE_URL}/${type === "file"? "files": "directory"}/${Id}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ newName: renameBox }),
-    });
+    const res = await fetch(
+      `${BASE_URL}/${type === "file" ? "files" : "directory"}/${Id}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ newName: renameBox }),
+      }
+    );
     const data = await res.json();
     console.log("data: ", data);
     setIsRenaming(false);
     setRenameBox("");
     fetchData();
   };
-
-  const toggleRenameBox = (oldname) => {
-    setIsRenaming(!isRenaming);
-    setRenameBox(oldname);
-  };
-
-  const handleFileChange = (e) => {
-    console.log(e.target.files);
-    setFile(e.target.files[0]);
-  };
-
   const handleFileUpload = async (pId, filename) => {
     if (!pId) pId = "root";
     if (!file) return;
@@ -73,6 +78,7 @@ function DirectoryUI() {
           "Content-Type": "application/octet-stream",
           parentdirid: pId,
         },
+        credentials: "include",
         body: file, // sending raw file
       });
 
@@ -89,7 +95,6 @@ function DirectoryUI() {
       setMessage("Error uploading file");
     }
   };
-
   const handleFolderCreation = async () => {
     if (!foldername) return;
 
@@ -98,8 +103,8 @@ function DirectoryUI() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          parentdirid: dirPath ? dirPath.replace("directory/", "") : "root",
         },
+        credentials: "include",
       });
 
       if (response.ok) {
@@ -115,9 +120,17 @@ function DirectoryUI() {
     }
   };
   const fetchData = async () => {
-    const res = await fetch(`${BASE_URL}/${dirPath ? dirPath : "directory"}`);
+    const res = await fetch(`${BASE_URL}/${dirPath ? dirPath : "directory"}`, {
+      credentials: "include",
+    });
     const data = await res.json();
-    if (data.length === 0) {
+
+    if (res.status === 401) {
+      navigate("/login");
+      return;
+    }
+
+    if (data.files.length === 0) {
       setNoFilesMsg("No Files");
     }
     console.log("data: ", data);
@@ -144,39 +157,16 @@ function DirectoryUI() {
         </button>
         <span className="explorer-path">{routesDisplay || "/"}</span>
       </div>
-      {isCreating && (
-        <div className="rename-box">
-          <input
-            placeholder="Enter Directory Name"
-            type="text"
-            onChange={(e) => setFoldername(e.target.value)}
-            className="rename-input"
-          />
-          <button className="toolbar-btn" onClick={handleFolderCreation}>
-            Ok
-          </button>
-          <button className="toolbar-btn" onClick={() => setIsUploading(false)}>
-            Cancel
-          </button>
-        </div>
-      )}
-      {isUploading && (
-        <div className="rename-box">
-          <div>
+      <div>
+        {isCreating && (
+          <div className="rename-box">
             <input
-              type="file"
-              onChange={handleFileChange}
+              placeholder="Enter Directory Name"
+              type="text"
+              onChange={(e) => setFoldername(e.target.value)}
               className="rename-input"
             />
-            <button
-              className="toolbar-btn"
-              onClick={() =>
-                handleFileUpload(
-                  dirPath ? dirPath.replace("directory/", "") : "root",
-                  file ? file.name : ""
-                )
-              }
-            >
+            <button className="toolbar-btn" onClick={handleFolderCreation}>
               Ok
             </button>
             <button
@@ -186,22 +176,54 @@ function DirectoryUI() {
               Cancel
             </button>
           </div>
-        </div>
-      )}
-      {isRenaming && (
-        <div className="rename-box">
-          <input
-            value={renameBox}
-            onChange={(e) => setRenameBox(e.target.value)}
-            className="rename-input"
-          />
-          <button className="toolbar-btn" onClick={() => setIsRenaming(false)}>
-            Cancel
-          </button>
-        </div>
-      )}
+        )}
+        {isUploading && (
+          <div className="rename-box">
+            <div>
+              <input
+                type="file"
+                onChange={handleFileChange}
+                className="rename-input"
+              />
+              <button
+                className="toolbar-btn"
+                onClick={() =>
+                  handleFileUpload(
+                    dirPath ? dirPath.replace("directory/", "") : "root",
+                    file ? file.name : ""
+                  )
+                }
+              >
+                Ok
+              </button>
+              <button
+                className="toolbar-btn"
+                onClick={() => setIsUploading(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+        {isRenaming && (
+          <div className="rename-box">
+            <input
+              value={renameBox}
+              onChange={(e) => setRenameBox(e.target.value)}
+              className="rename-input"
+            />
+            <button
+              className="toolbar-btn"
+              onClick={() => setIsRenaming(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+      </div>
       {message && <span>{message}</span>}
       <div className="explorer-table-wrapper">
+        {noFilesMsg && <div className="no-file-msg">{noFilesMsg}</div>}
         <table className="explorer-table">
           <thead>
             <tr>
@@ -213,8 +235,7 @@ function DirectoryUI() {
             </tr>
           </thead>
           <tbody>
-            {noFilesMsg && <div className="no-file-msg">{noFilesMsg}</div>}
-            {dirItems?.directories?.map(({ pDir,name, id }, i) => (
+            {dirItems?.directories?.map(({ pDir, name, id }, i) => (
               <tr key={i}>
                 <td>
                   <span role="img" aria-label="folder">
@@ -234,7 +255,7 @@ function DirectoryUI() {
                 <td> Folder </td>
                 <td>
                   <>
-                   <button
+                    <button
                       className="action-btn"
                       onClick={() => toggleRenameBox(name)}
                     >
@@ -242,13 +263,13 @@ function DirectoryUI() {
                     </button>
                     <button
                       className="action-btn"
-                      onClick={() => handleRename(name, id,"folder")}
+                      onClick={() => handleRename(name, id, "folder")}
                     >
                       Save
                     </button>
                     <button
                       className="action-btn"
-                      onClick={() => handleDelete(pDir,id)}
+                      onClick={() => handleDelete(pDir, id)}
                     >
                       Delete
                     </button>
@@ -277,7 +298,7 @@ function DirectoryUI() {
                     </button>
                     <button
                       className="action-btn"
-                      onClick={() => handleRename(filename, id,"file")}
+                      onClick={() => handleRename(filename, id, "file")}
                     >
                       Save
                     </button>

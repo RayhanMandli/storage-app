@@ -1,41 +1,31 @@
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import directoryRoutes from "./routes/directoryRoutes.js";
 import deleteRoutes from "./routes/deleteRoutes.js";
 import filesRoutes from "./routes/filesRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
+import { authMiddleware } from "./middlewares/auth.js";
+
 
 
 const app = express();
-
+app.use(cors({
+  credentials: true,
+  origin: "http://localhost:5173",
+}));
+app.use(cookieParser());
 app.use(express.json());
-app.use(cors());
 
 
-app.use("/directory", directoryRoutes);
-app.use("/delete", deleteRoutes);
-app.use("/files", filesRoutes);
-app.use("/upload", uploadRoutes);
 
-// //Creating Directory
-// app.post("/create-folder", async (req, res) => {
-//   let { foldername, dirPath } = req.body;
-//   if (dirPath.startsWith("directory")) {
-//     dirPath = dirPath.replace("directory/", "");
-//   }
-//   let directoryPath = `./storage/${dirPath ? dirPath : ""}/${foldername}`;
-//   try {
-//     await mkdir(directoryPath);
-//     res.status(200).json({ message: "Directory created" });
-//   } catch (e) {
-//     res.status(400).json({ message: e.message });
-//   }
-// });
+app.use("/directory", authMiddleware, directoryRoutes);
+app.use("/delete",authMiddleware, deleteRoutes);
+app.use("/files",authMiddleware, filesRoutes);
+app.use("/upload",authMiddleware, uploadRoutes);
+app.use("/auth", authRoutes);
 
-// //Serve root directory
-// app.get("/", async (req, res) => {
-//   res.json(await readDirectory());
-// });
 
 //Starting the server
 app.listen(4000, () => {

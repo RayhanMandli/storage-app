@@ -1,0 +1,16 @@
+[
+  {
+    "id": "user123",
+    "rootDirId": "root",
+    "email": "userEmail@gmail.com",
+    "password": "1234",
+    "name": "Rayhan Mandli"
+  },
+  {
+    "id": "e8b12110-28dd-407a-b7e4-a397bbdb7c94",
+    "rootDirId": "750b1dcd-34ec-4cc1-8462-ac52b73131d7",
+    "name": "Rayhan Mandli",
+    "email": "rayhan@gmail.com",
+    "password": "abcd"
+  }
+]

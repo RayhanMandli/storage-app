@@ -1,37 +1,3 @@
 [
-  {
-    "id": "e3f48aa1-e8ff-4f7b-9647-dc1f0ace0ced",
-    "filename": "ss1.png",
-    "extension": ".png",
-    "pDir": "root",
-    "createdAt": "2025-09-30T04:21:37.839Z"
-  },
-  {
-    "id": "647e72bd-d5cd-4c57-b0ae-b24452757a50",
-    "filename": "ss2.png",
-    "extension": ".png",
-    "pDir": "root",
-    "createdAt": "2025-09-30T04:21:57.452Z"
-  },
-  {
-    "id": "bdca236a-508c-4532-a0dd-43f01b28ac8f",
-    "filename": "ss3.png",
-    "extension": ".png",
-    "pDir": "0aa3bf14-0f5f-41cd-8019-b3f09922406c",
-    "createdAt": "2025-09-30T04:23:18.625Z"
-  },
-  {
-    "id": "1548f774-e25c-42d7-9320-d58afe1c1da4",
-    "filename": "dfd1.png",
-    "extension": ".png",
-    "pDir": "0aa3bf14-0f5f-41cd-8019-b3f09922406c",
-    "createdAt": "2025-09-30T05:16:39.355Z"
-  },
-  {
-    "id": "152c2def-3ed2-4b4f-9737-4ac86e0890b8",
-    "filename": "dfd2.png",
-    "extension": ".png",
-    "pDir": "root",
-    "createdAt": "2025-09-30T09:16:04.698Z"
-  }
+  
 ]
