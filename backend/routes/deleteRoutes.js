@@ -32,7 +32,9 @@ const deleteFile = async (id, parentDirId, dirDelete) => {
 
 //Delete files
 router.delete("/:id", async (req, res) => {
-  const parentDirId = req.headers["parentdirid"] || "root";
+
+  const parentDirId = req.headers["parentdirid"];
+  
   const { type } = req.query;
   const { id } = req.params;
 

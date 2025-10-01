@@ -17,6 +17,7 @@ function DirectoryUI() {
   const [isCreating, setIsCreating] = useState(false);
   const [foldername, setFoldername] = useState("");
   let { "*": dirPath } = useParams();
+  console.log(dirPath)
   const navigate = useNavigate();
   //utility functions
   const toggleRenameBox = (oldname) => {
@@ -103,6 +104,7 @@ function DirectoryUI() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          parentdirid: dirPath !== "directory" ? dirPath.replace("directory/", "") : "root",
         },
         credentials: "include",
       });
@@ -130,7 +132,7 @@ function DirectoryUI() {
       return;
     }
 
-    if (data.files.length === 0) {
+    if (data.files.length === 0 && data.directories.length === 0) {
       setNoFilesMsg("No Files");
     }
     console.log("data: ", data);

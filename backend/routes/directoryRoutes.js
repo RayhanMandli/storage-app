@@ -5,31 +5,6 @@ import filesData from "../db/fileDB.json" with { type: "json" };
 
 const router = express.Router();
 
-// //Function to read directory and return files and folders
-// export const readDirectory = async (directoryName) => {
-//   let directoryPath = `./storage/${directoryName ? directoryName : ""}`;
-//   let files = await readdir(directoryPath);
-//   let jsonData = [];
-
-//   for (const file of files) {
-//     try {
-//       const stats = await stat(`${directoryPath}/${file}`);
-
-//       jsonData.push({ name: file, isDir: stats.isDirectory() });
-//       jsonData.sort((a, b) => {
-//         if (a.isDir && !b.isDir) return -1;
-//         if (!a.isDir && b.isDir) return 1;
-//         return a.name.localeCompare(b.name);
-//       });
-//     } catch (e) {
-//       res.status(400).json({ message: e.message });
-//     }
-//   }
-//   return jsonData;
-// };
-
-
-
 router.get("/{:id}", (req,res)=>{
   const userId = req.user.id;
   const userRootDirId = req.user.rootDirId;
@@ -53,9 +28,11 @@ router.get("/{:id}", (req,res)=>{
 })
 
 router.post("/:dirname", async(req,res)=>{
+  console.log(req.user)
   const userId = req.user.id;
   const userRootDirId = req.user.rootDirId;
-  const parentDirId = req.headers.parentdirid || userRootDirId;
+  let parentDirId = req.headers.parentdirid;
+  if(parentDirId === "root") parentDirId = userRootDirId;
   const id = crypto.randomUUID();
   const {dirname} = req.params;
 
@@ -72,10 +49,12 @@ router.post("/:dirname", async(req,res)=>{
 })
 
 router.patch("/:id", async(req,res)=>{
+  const {id:userId} = req.user;
   const {newName} = req.body;
   const {id} = req.params;
   const dir = directoriesData.find(d=>d.id===id);
   if(!dir) return res.status(404).json({message: "Directory not found"});
+  if(dir.userId !== userId) return res.status(403).json({message: "Forbidden"});
   dir.name = newName;
   try{
     await writeFile("./db/directoryDB.json", JSON.stringify(directoriesData, null, 2));
