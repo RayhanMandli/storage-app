@@ -6,6 +6,7 @@ import deleteRoutes from "./routes/deleteRoutes.js";
 import filesRoutes from "./routes/filesRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
+import userRoutes from "./routes/userRoutes.js";
 import { authMiddleware } from "./middlewares/auth.js";
 
 
@@ -24,6 +25,7 @@ app.use("/directory", authMiddleware, directoryRoutes);
 app.use("/delete",authMiddleware, deleteRoutes);
 app.use("/files",authMiddleware, filesRoutes);
 app.use("/upload",authMiddleware, uploadRoutes);
+app.use("/user",authMiddleware, userRoutes);
 app.use("/auth", authRoutes);
 
 

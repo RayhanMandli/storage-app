@@ -25,6 +25,7 @@ const deleteFile = async (id, parentDirId, dirDelete) => {
       );
     }
     await writeFile("./db/fileDB.json", JSON.stringify(filesData, null, 2));
+    return { success: true, message: "file deleted" };
   } catch (e) {
     return { success: false, message: e.message };
   }

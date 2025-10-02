@@ -51,6 +51,7 @@ router.post("/register", async (req, res) => {
   }
 })
 
+//Login Route
 router.post("/login", (req, res) => {
   const { email, password } = req.body;
   const user = usersData.find(
@@ -63,5 +64,11 @@ router.post("/login", (req, res) => {
   res.cookie("userId", user.id, { maxAge: 24 * 60 * 60 * 1000 , httpOnly: true, sameSite: 'none', secure: true});
   res.json({ message: "Login successful" });
 })
+
+//Logout Route
+router.post("/logout", (req, res) => {
+  res.clearCookie("userId", { httpOnly: true, sameSite: 'none', secure: true });
+  res.json({ message: "Logout successful" });
+});
 
 export default router;

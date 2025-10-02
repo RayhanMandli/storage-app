@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import "./App.css";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import {  Link, useNavigate, useParams } from "react-router-dom";
 import { DirectoryContext } from "./contexts/DirectoryContexts";
 import { useContext } from "react";
 
@@ -16,8 +16,11 @@ function DirectoryUI() {
   const [isUploading, setIsUploading] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [foldername, setFoldername] = useState("");
+  const [user, setUser] = useState({});
+  const [loggedIn, setLoggedIn] = useState(false);
+
   let { "*": dirPath } = useParams();
-  console.log(dirPath)
+  console.log(dirPath);
   const navigate = useNavigate();
   //utility functions
   const toggleRenameBox = (oldname) => {
@@ -104,7 +107,10 @@ function DirectoryUI() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          parentdirid: dirPath !== "directory" ? dirPath.replace("directory/", "") : "root",
+          parentdirid:
+            dirPath !== "directory" && dirPath
+              ? dirPath.replace("directory/", "")
+              : "root",
         },
         credentials: "include",
       });
@@ -138,26 +144,89 @@ function DirectoryUI() {
     console.log("data: ", data);
     setDirItems(data);
   };
+  const handleLogout = async () => {
+    try {
+      const response = await fetch(`${BASE_URL}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await response.json();
+      if (response.ok) {
+        console.log(data.message);
+        setLoggedIn(false);
+        setUser({});
+        navigate("/login");
+      } else {
+        console.error("Failed to logout");
+      }
+    } catch (error) {
+      console.error("Error during logout:", error);
+    }
+  };
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await fetch(`${BASE_URL}/user`, {
+          method: "GET",
+          credentials: "include",
+        });
+        if (response.ok) {
+          const userData = await response.json();
+          setUser(userData);
+          setLoggedIn(true);
+        } else {
+          console.error("Failed to fetch user data");
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      }
+    };
+    fetchUser();
+  }, [BASE_URL]);
+
   useEffect(() => {
     fetchData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dirPath]);
 
   return (
     <div className="explorer-container">
       <div className="explorer-toolbar">
-        <button
-          className="toolbar-btn"
-          onClick={() => setIsCreating(!isCreating)}
-        >
-          New Folder
-        </button>
-        <button
-          className="toolbar-btn"
-          onClick={() => setIsUploading(!isUploading)}
-        >
-          Upload
-        </button>
+        <div className="btn-group">
+          <button
+            className="toolbar-btn"
+            onClick={() => setIsCreating(!isCreating)}
+          >
+            New Folder
+          </button>
+          <button
+            className="toolbar-btn"
+            onClick={() => setIsUploading(!isUploading)}
+          >
+            Upload
+          </button>
+        </div>
         <span className="explorer-path">{routesDisplay || "/"}</span>
+        <div>
+          {loggedIn ? (
+            <div>
+              <span style={{ fontSize: "13px", color: "#616161" }}>
+                {user.name}
+              </span>
+              <button
+                className="toolbar-btn"
+                onClick={handleLogout}
+              >
+                Logout
+              </button>
+            </div>
+          ) : (
+            <Link to="/login" className="toolbar-btn">
+              Login
+            </Link>
+          )}
+        </div>
       </div>
       <div>
         {isCreating && (

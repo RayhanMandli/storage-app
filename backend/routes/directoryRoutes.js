@@ -28,11 +28,11 @@ router.get("/{:id}", (req,res)=>{
 })
 
 router.post("/:dirname", async(req,res)=>{
-  console.log(req.user)
   const userId = req.user.id;
   const userRootDirId = req.user.rootDirId;
   let parentDirId = req.headers.parentdirid;
   if(parentDirId === "root") parentDirId = userRootDirId;
+  console.log(parentDirId)
   const id = crypto.randomUUID();
   const {dirname} = req.params;
 

@@ -13,19 +13,7 @@
     "parentId": null,
     "userId": "e8b12110-28dd-407a-b7e4-a397bbdb7c94",
     "files": [],
-    "directories": [
-      "08e1846d-0727-4993-826e-67e7d32ace69"
-    ]
-  },
-  {
-    "id": "08e1846d-0727-4993-826e-67e7d32ace69",
-    "name": "tests",
-    "pDir": "750b1dcd-34ec-4cc1-8462-ac52b73131d7",
-    "userId": "e8b12110-28dd-407a-b7e4-a397bbdb7c94",
-    "files": [],
-    "directories": [
-      "2ec13858-0ece-46c8-87bf-ec22ebfd8a2b"
-    ]
+    "directories": []
   },
   {
     "id": "a23a7e3a-0994-43b1-b150-3cb2843d3894",
@@ -42,14 +30,6 @@
     "name": "testing",
     "pDir": "a23a7e3a-0994-43b1-b150-3cb2843d3894",
     "userId": "9e9d7d29-4907-4d7a-90db-fbab3a70d3c2",
-    "files": [],
-    "directories": []
-  },
-  {
-    "id": "2ec13858-0ece-46c8-87bf-ec22ebfd8a2b",
-    "name": "tests2",
-    "pDir": "08e1846d-0727-4993-826e-67e7d32ace69",
-    "userId": "e8b12110-28dd-407a-b7e4-a397bbdb7c94",
     "files": [],
     "directories": []
   }
