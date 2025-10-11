@@ -36,7 +36,6 @@ router
 
     try {
       let file = await filesCollection.findOne({ _id: new ObjectId(id) });
-      console.log(file)
       if (!file) return res.status(404).json({ message: "File not found" });
       const updatedFile = await filesCollection.updateOne(
         { _id: file._id },

@@ -1,30 +1,48 @@
 import express from "express";
-import { rm, writeFile } from "fs/promises";
-import filesData from "../db/fileDB.json" with { type: "json" };
-import directoriesData from "../db/directoryDB.json" with { type: "json" };
+import { rm } from "fs/promises";
+import { ObjectId } from "mongodb";
 
 const router = express.Router();
 
-const deleteFile = async (id, parentDirId, dirDelete) => {
-  const file = filesData.find((f) => f.id === id);
+const deleteDirectory = async (db, id, next) => {
+  const directoriesCollection = db.collection("directories");
+  const filesCollection = db.collection("files");
+  const dir = await directoriesCollection.findOne({ _id: new ObjectId(id) });
+  if (!dir) return { success: false, message: "Directory not found" };
+
+  try {
+    const filesToBeDeleted = await filesCollection
+      .find({ parentDirId: dir._id })
+      .toArray();
+    for (let file of filesToBeDeleted) {
+      await rm(`./storage/${file._id.toString()}${file.extension}`, {
+        force: true,
+      });
+      const deletedFile = await filesCollection.deleteOne({ _id: file._id });
+      if (deletedFile.deletedCount === 0)
+        return { success: false, message: "Could not delete file" };
+    }
+    const deletedDir = await directoriesCollection.deleteOne({ _id: dir._id });
+    if (deletedDir.deletedCount === 0)
+      return { success: false, message: "Could not delete directory" };
+    return { success: true, message: "directory deleted" };
+  } catch (e) {
+    next(e);
+  }
+};
+const deleteFile = async (db, id) => {
+  const filesCollection = db.collection("files");
+  const file = await filesCollection.findOne({ _id: new ObjectId(id) });
   const { extension } = file;
+  if (!file) return { success: false, message: "File not found" };
 
   try {
     await rm(`./storage/${id}${extension}`, {
       force: true,
     });
-
-    filesData.splice(filesData.indexOf(file), 1);
-    if (!dirDelete) {
-      const parentDir = directoriesData.find((d) => d.id === parentDirId);
-      const remainingFiles = parentDir.files.filter((fileId) => fileId !== id);
-      parentDir.files = remainingFiles;
-      await writeFile(
-        "./db/directoryDB.json",
-        JSON.stringify(directoriesData, null, 2)
-      );
-    }
-    await writeFile("./db/fileDB.json", JSON.stringify(filesData, null, 2));
+    const deletedFile = await filesCollection.deleteOne({ _id: file._id });
+    if (deletedFile.deletedCount === 0)
+      return { success: false, message: "Could not delete file" };
     return { success: true, message: "file deleted" };
   } catch (e) {
     return { success: false, message: e.message };
@@ -32,39 +50,24 @@ const deleteFile = async (id, parentDirId, dirDelete) => {
 };
 
 //Delete files
-router.delete("/:id", async (req, res) => {
-
-  const parentDirId = req.headers["parentdirid"];
-  
+router.delete("/:id", async (req, res, next) => {
   const { type } = req.query;
   const { id } = req.params;
+  const db = req.db;
 
   if (type === "file") {
-    const result = await deleteFile(id, parentDirId, false);
+    const result = await deleteFile(db,id);
     if (!result.success) {
       return res.status(500).json({ message: result.message });
     }
-    res.status(200).json({ message: "file deleted" });
+    res.status(200).json({ message: result.message });
   } else {
-    const dir = directoriesData.find((d) => d.id === id);
-    if (!dir) return res.status(404).json({ message: "Directory not found" });
-
-    if (dir.files.length > 0) {
-      dir.files.forEach(async (fileId) => {
-        await deleteFile(fileId, id, true);
-      });
-    }
-    const index = directoriesData.indexOf(dir);
-    directoriesData.splice(index, 1);
-    const parentDir = directoriesData.find((d) => d.id === parentDirId);
-    const subdirs = parentDir.directories.filter((subdirId) => subdirId !== id);
-    parentDir.directories = subdirs;
+    const result = await deleteDirectory(db, id, next);
     try {
-      await writeFile(
-        "./db/directoryDB.json",
-        JSON.stringify(directoriesData, null, 2)
-      );
-      res.status(200).json({ message: "Directory deleted" });
+      if (!result.success) {
+        return res.status(500).json({ message: result.message });
+      }
+      res.status(200).json({ message: result.message });
     } catch (e) {
       res.status(500).json({ message: e.message });
     }

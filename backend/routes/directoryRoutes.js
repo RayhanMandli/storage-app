@@ -1,4 +1,3 @@
-import { dir } from "console";
 import express from "express";
 import { Db, ObjectId } from "mongodb";
 // import {writeFile} from "fs/promises";
@@ -27,7 +26,6 @@ router.get("/{:id}", async (req, res) => {
   // const files = directoryData.files.map(fileId =>{
   //   return filesData.find(file=>file.id===fileId)
   // })
-  console.log(files)
 
   const directories = await directoriesCollection
     .find({ parentDirId: dirid })
@@ -50,14 +48,12 @@ router.post("/:dirname", async (req, res) => {
 
   const db = req.db;
   const directoriesCollection = db.collection("directories");
-  console.log({ parentDirId });
   const { dirname } = req.params;
 
   try {
     const parentDir = await directoriesCollection.findOne({
       _id: parentDirId,
     });
-    console.log({ parentDir });
     if (!parentDir)
       return res.status(400).json({ message: "Parent directory not found" });
 
