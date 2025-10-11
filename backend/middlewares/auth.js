@@ -9,7 +9,6 @@ export async function authMiddleware(req, res, next) {
   }
   const usersCollection = db.collection("users");
   const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
-  console.log(user)
   if (!user) {
     return res.status(401).json({ error: "Unauthorized" });
   }

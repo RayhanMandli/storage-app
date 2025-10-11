@@ -1,69 +1,102 @@
 import { dir } from "console";
 import express from "express";
+import { Db, ObjectId } from "mongodb";
 // import {writeFile} from "fs/promises";
 // import directoriesData from "../db/directoryDB.json" with { type: "json" };
 // import filesData from "../db/fileDB.json" with { type: "json" };
 
 const router = express.Router();
 
-router.get("/{:id}", async(req,res)=>{
+router.get("/{:id}", async (req, res) => {
   const userId = req.user._id;
   const userRootDirId = req.user.rootDirId;
-  const dirid = req.params.id || userRootDirId;
+  const dirid = req.params.id ? new ObjectId(req.params.id) : userRootDirId;
   const db = req.db;
   const directoriesCollection = db.collection("directories");
-  const directoryData = await directoriesCollection.findOne({id: dirid});
+  const directoryData = await directoriesCollection.findOne({
+    _id: dirid,
+    userId,
+  });
 
-  if(directoryData.userId !== userId) return res.status(403).json({message: "Forbidden"});
-  if(!directoryData) return res.status(404).json({message: "Directory not found"});
+  if (!directoryData)
+    return res.status(404).json({ message: "Directory not found" });
 
-  const files = directoryData.files.map(fileId =>{
-    return filesData.find(file=>file.id===fileId)
-  })
+  //* Files serves are going to be handled here
+  const files = [];
+  // const files = directoryData.files.map(fileId =>{
+  //   return filesData.find(file=>file.id===fileId)
+  // })
 
-  const directories = directoryData.directories.map(dirId=>{
-    return directoriesData.find(dir=>dir.id===dirId)
-  })
+  const directories = await directoriesCollection
+    .find({ parentDirId: dirid })
+    .toArray();
 
-  res.json({...directoryData, files, directories});
+  res.json({
+    ...directoryData,
+    files,
+    directories
+  });
+});
 
-})
-
-router.post("/:dirname", async(req,res)=>{
-  const userId = req.user.id;
+router.post("/:dirname", async (req, res) => {
+  const userId = req.user._id;
   const userRootDirId = req.user.rootDirId;
   let parentDirId = req.headers.parentdirid;
-  if(parentDirId === "root") parentDirId = userRootDirId;
-  console.log(parentDirId)
-  const id = crypto.randomUUID();
-  const {dirname} = req.params;
 
-  const parentDir = directoriesData.find(dir=>dir.id===parentDirId);
-  if(!parentDir) return res.status(400).json({message: "Parent directory not found"})
-  parentDir.directories.push(id);
-  directoriesData.push({id, name: dirname, pDir: parentDirId, userId, files: [], directories: []})
-  try{
-    await writeFile("./db/directoryDB.json", JSON.stringify(directoriesData, null, 2));
-    res.status(200).json({message: "Directory created successfully"})
-  }catch(e){
+  if (parentDirId !== "root") parentDirId = new ObjectId(parentDirId);
+  else parentDirId = userRootDirId;
+
+  const db = req.db;
+  const directoriesCollection = db.collection("directories");
+  console.log({parentDirId});
+  const { dirname } = req.params;
+
+  try {
+    const parentDir = await directoriesCollection.findOne({
+      _id: parentDirId,
+    });
+    console.log({parentDir})
+    if (!parentDir)
+      return res.status(400).json({ message: "Parent directory not found" });
+
+    const newDir = await directoriesCollection.insertOne({
+      name: dirname,
+      parentDirId,
+      userId,
+    });
+    res.status(200).json({ message: "Directory created successfully" });
+  } catch (e) {
     return res.status(500).json({ message: "Error creating directory" });
   }
-})
+});
 
-router.patch("/:id", async(req,res)=>{
-  const {id:userId} = req.user;
-  const {newName} = req.body;
-  const {id} = req.params;
-  const dir = directoriesData.find(d=>d.id===id);
-  if(!dir) return res.status(404).json({message: "Directory not found"});
-  if(dir.userId !== userId) return res.status(403).json({message: "Forbidden"});
-  dir.name = newName;
-  try{
-    await writeFile("./db/directoryDB.json", JSON.stringify(directoriesData, null, 2));
-    res.status(200).json({message: "Directory renamed successfully"})
-  }catch(e){
+router.patch("/:id", async (req, res) => {
+  const { _id: userId } = req.user;
+  const { newName } = req.body || "New Folder";
+  const { id } = req.params;
+  const db = req.db;
+  const directoriesCollection = db.collection("directories");
+
+  try {
+    const dir = await directoriesCollection.findOne({
+      _id: new ObjectId(id),
+      userId,
+    });
+
+    if (!dir)
+      return res
+        .status(404)
+        .json({ message: "Directory not found or Forbidden" });
+
+    const updatedDir = await directoriesCollection.updateOne(
+      { _id: dir._id },
+      { $set: { name: newName } }
+    );
+
+    res.status(200).json({ message: "Directory renamed successfully" });
+  } catch (e) {
     return res.status(500).json({ message: "Error renaming directory" });
   }
-})
+});
 
 export default router;

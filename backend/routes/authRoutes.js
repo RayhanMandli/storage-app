@@ -23,9 +23,7 @@ router.post("/register", async (req, res) => {
 
     const newDir = await directoriesCollection.insertOne({
       name: `root-${email}`,
-      parentId: null,
-      files: [],
-      directories: [],
+      parentDirId: null
     });
     const rootDirId = newDir.insertedId;
 
@@ -56,7 +54,6 @@ router.post("/login", async(req, res) => {
     return res.status(401).json({ error: "Invalid email or password" });
   }
   // console.log(user)
-  console.log(user._id.toString())
   res.cookie("userId", user._id.toString(), {
     maxAge: 24 * 60 * 60 * 1000,
     httpOnly: true,

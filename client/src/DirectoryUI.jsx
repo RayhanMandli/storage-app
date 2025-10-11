@@ -306,7 +306,7 @@ function DirectoryUI() {
             </tr>
           </thead>
           <tbody>
-            {dirItems?.directories?.map(({ pDir, name, id }, i) => (
+            {dirItems?.directories?.map(({ pDir, name, _id:id }, i) => (
               <tr key={i}>
                 <td>
                   <span role="img" aria-label="folder">
