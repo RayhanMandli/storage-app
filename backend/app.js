@@ -33,6 +33,11 @@ app.use("/upload",authMiddleware, uploadRoutes);
 app.use("/user",authMiddleware, userRoutes);
 app.use("/auth", authRoutes);
 
+//Global error handler
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(500).json({ message: "Internal Server Error" });
+});
 
 //Starting the server
 app.listen(4000, () => {

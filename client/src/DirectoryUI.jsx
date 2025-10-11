@@ -348,7 +348,7 @@ function DirectoryUI() {
                 </td>
               </tr>
             ))}
-            {dirItems?.files?.map(({ filename, id, createdAt, pDir }, i) => (
+            {dirItems?.files?.map(({ filename, _id: id, createdAt, pDir }, i) => (
               <tr key={i}>
                 <td>
                   <span role="img" aria-label="file">

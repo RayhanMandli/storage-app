@@ -13,6 +13,7 @@ router.get("/{:id}", async (req, res) => {
   const dirid = req.params.id ? new ObjectId(req.params.id) : userRootDirId;
   const db = req.db;
   const directoriesCollection = db.collection("directories");
+  const filesCollection = db.collection("files");
   const directoryData = await directoriesCollection.findOne({
     _id: dirid,
     userId,
@@ -22,10 +23,11 @@ router.get("/{:id}", async (req, res) => {
     return res.status(404).json({ message: "Directory not found" });
 
   //* Files serves are going to be handled here
-  const files = [];
+  const files = await filesCollection.find({ parentDirId: dirid }).toArray();
   // const files = directoryData.files.map(fileId =>{
   //   return filesData.find(file=>file.id===fileId)
   // })
+  console.log(files)
 
   const directories = await directoriesCollection
     .find({ parentDirId: dirid })
@@ -34,7 +36,7 @@ router.get("/{:id}", async (req, res) => {
   res.json({
     ...directoryData,
     files,
-    directories
+    directories,
   });
 });
 
@@ -48,14 +50,14 @@ router.post("/:dirname", async (req, res) => {
 
   const db = req.db;
   const directoriesCollection = db.collection("directories");
-  console.log({parentDirId});
+  console.log({ parentDirId });
   const { dirname } = req.params;
 
   try {
     const parentDir = await directoriesCollection.findOne({
       _id: parentDirId,
     });
-    console.log({parentDir})
+    console.log({ parentDir });
     if (!parentDir)
       return res.status(400).json({ message: "Parent directory not found" });
 
@@ -92,6 +94,9 @@ router.patch("/:id", async (req, res) => {
       { _id: dir._id },
       { $set: { name: newName } }
     );
+
+    if (updatedDir.modifiedCount === 0)
+      return res.status(500).json({ message: "Could not rename directory" });
 
     res.status(200).json({ message: "Directory renamed successfully" });
   } catch (e) {
