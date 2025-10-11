@@ -1,16 +1,18 @@
+import { dir } from "console";
 import express from "express";
-import {writeFile} from "fs/promises";
-import directoriesData from "../db/directoryDB.json" with { type: "json" };
-import filesData from "../db/fileDB.json" with { type: "json" };
+// import {writeFile} from "fs/promises";
+// import directoriesData from "../db/directoryDB.json" with { type: "json" };
+// import filesData from "../db/fileDB.json" with { type: "json" };
 
 const router = express.Router();
 
-router.get("/{:id}", (req,res)=>{
-  const userId = req.user.id;
+router.get("/{:id}", async(req,res)=>{
+  const userId = req.user._id;
   const userRootDirId = req.user.rootDirId;
   const dirid = req.params.id || userRootDirId;
-
-  const directoryData = directoriesData.find(dir=>dir.id===dirid);
+  const db = req.db;
+  const directoriesCollection = db.collection("directories");
+  const directoryData = await directoriesCollection.findOne({id: dirid});
 
   if(directoryData.userId !== userId) return res.status(403).json({message: "Forbidden"});
   if(!directoryData) return res.status(404).json({message: "Directory not found"});

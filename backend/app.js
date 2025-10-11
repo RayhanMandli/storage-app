@@ -8,6 +8,7 @@ import uploadRoutes from "./routes/uploadRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import { authMiddleware } from "./middlewares/auth.js";
+import connectDB from "./middlewares/db.js";
 
 
 
@@ -21,6 +22,10 @@ app.use(express.json());
 
 
 
+app.use(async (req, res, next) => {
+  req.db = await connectDB();
+  next();
+});
 app.use("/directory", authMiddleware, directoryRoutes);
 app.use("/delete",authMiddleware, deleteRoutes);
 app.use("/files",authMiddleware, filesRoutes);

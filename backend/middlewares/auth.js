@@ -1,12 +1,19 @@
-import usersData from "../db/userDB.json" with { type: "json" };
+import { ObjectId } from "mongodb";
 
-export function authMiddleware(req, res, next) {
+export async function authMiddleware(req, res, next) {
   const { userId } = req.cookies;
-  const user = usersData.find((u) => u.id === userId);
-
-  if (!userId || !user) {
+  // console.log(userId)
+  const db = req.db;
+  if(!userId){
     return res.status(401).json({ error: "Unauthorized" });
   }
-  req.user = user; // Attach user info to request object
+  const usersCollection = db.collection("users");
+  const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
+  console.log(user)
+  if (!user) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  req.user = user; 
   next();
 }

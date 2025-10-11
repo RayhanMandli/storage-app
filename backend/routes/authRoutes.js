@@ -1,73 +1,74 @@
 import express from "express";
-import {writeFile } from "fs/promises";
-import directoriesData from "../db/directoryDB.json" with { type: "json" };
-import usersData from "../db/userDB.json" with { type: "json" };
-
+import { writeFile } from "fs/promises";
+import { Db } from "mongodb";
 const router = express.Router();
-
 
 // Register Route
 router.post("/register", async (req, res) => {
   const { name, email, password } = req.body;
-  const userExists = usersData.find((user) => user.email === email);
-  const id = crypto.randomUUID();
-  const rootDirId = crypto.randomUUID();
+  // const userExists = usersData.find((user) => user.email === email);
+  // const id = crypto.randomUUID();
+  // const rootDirId = crypto.randomUUID();
 
-  if (userExists) {
-    return res.status(409).json({ error: "Email already exists" });
-  }
-  const newUser = {
-    id,
-    rootDirId,
-    name,
-    email,
-    password, // In production, hash the password before storing
-  };
+  const db = req.db;
+  const directoriesCollection = db.collection("directories");
+  const usersCollection = db.collection("users");
 
-  const newRootDirectory = {
-    id: rootDirId,
-    name: `root-${email}`,
-    parentId: null,
-    userId: id,
-    files: [],
-    directories: [],
-  };
-  
-  usersData.push(newUser);
-  directoriesData.push(newRootDirectory);
   try {
-    await writeFile(
-      "./db/userDB.json",
-      JSON.stringify(usersData, null, 2)
-    );
-    await writeFile(
-      "./db/directoryDB.json",
-      JSON.stringify(directoriesData, null, 2)
-    );
+    const userExists = await usersCollection.findOne({ email });
+
+    if (userExists) {
+      return res.status(409).json({ error: "Email already exists" });
+    }
+
+    const newDir = await directoriesCollection.insertOne({
+      name: `root-${email}`,
+      parentId: null,
+      files: [],
+      directories: [],
+    });
+    const rootDirId = newDir.insertedId;
+
+    const newUser = await usersCollection.insertOne({
+      rootDirId,
+      name,
+      email,
+      password,
+    });
+    const userId = newUser.insertedId;
+
+    directoriesCollection.updateOne({ _id: rootDirId }, { $set: { userId } });
     res.status(201).json({ message: "User registered successfully" });
   } catch (error) {
     console.error("Error writing to file:", error);
     res.status(500).json({ error: "Internal server error" });
   }
-})
+});
 
 //Login Route
-router.post("/login", (req, res) => {
+router.post("/login", async(req, res) => {
   const { email, password } = req.body;
-  const user = usersData.find(
-    (user) => user.email === email && user.password === password
-  );
+  const db = req.db;
+  const usersCollection = db.collection("users");
+  const user = await usersCollection.findOne({ email, password });
   // console.log(user)
   if (!user) {
     return res.status(401).json({ error: "Invalid email or password" });
   }
-  res.cookie("userId", user.id, { maxAge: 24 * 60 * 60 * 1000 , httpOnly: true, sameSite: 'none', secure: true});
+  // console.log(user)
+  console.log(user._id.toString())
+  res.cookie("userId", user._id.toString(), {
+    maxAge: 24 * 60 * 60 * 1000,
+    httpOnly: true,
+    sameSite: "none",
+    secure: true,
+  });
   res.json({ message: "Login successful" });
-})
+});
 
 //Logout Route
 router.post("/logout", (req, res) => {
-  res.clearCookie("userId", { httpOnly: true, sameSite: 'none', secure: true });
+  res.clearCookie("userId", { httpOnly: true, sameSite: "none", secure: true });
   res.json({ message: "Logout successful" });
 });
 
