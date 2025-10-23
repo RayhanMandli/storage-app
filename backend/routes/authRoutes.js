@@ -1,6 +1,6 @@
 import express from "express";
-import { writeFile } from "fs/promises";
-import { Db } from "mongodb";
+import { Db, ObjectId } from "mongodb";
+import { User } from "../models/userModel.js";
 const router = express.Router();
 
 // Register Route
@@ -20,22 +20,24 @@ router.post("/register", async (req, res) => {
     if (userExists) {
       return res.status(409).json({ error: "Email already exists" });
     }
+    const userId = new ObjectId();
+    const rootDirId = new ObjectId();
 
-    const newDir = await directoriesCollection.insertOne({
+    await directoriesCollection.insertOne({
+      _id: rootDirId,
       name: `root-${email}`,
-      parentDirId: null
+      parentDirId: null,
+      userId,
     });
-    const rootDirId = newDir.insertedId;
 
-    const newUser = await usersCollection.insertOne({
+    await usersCollection.insertOne({
+      _id: userId,
       rootDirId,
       name,
       email,
       password,
     });
-    const userId = newUser.insertedId;
 
-    directoriesCollection.updateOne({ _id: rootDirId }, { $set: { userId } });
     res.status(201).json({ message: "User registered successfully" });
   } catch (error) {
     console.error("Error writing to file:", error);
@@ -44,11 +46,11 @@ router.post("/register", async (req, res) => {
 });
 
 //Login Route
-router.post("/login", async(req, res) => {
+router.post("/login", async (req, res) => {
   const { email, password } = req.body;
-  const db = req.db;
-  const usersCollection = db.collection("users");
-  const user = await usersCollection.findOne({ email, password });
+  // const db = req.db;
+  // const usersCollection = db.collection("users");
+  const user = await User.findOne({ email, password });
   // console.log(user)
   if (!user) {
     return res.status(401).json({ error: "Invalid email or password" });

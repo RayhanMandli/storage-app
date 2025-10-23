@@ -1,10 +1,11 @@
-import { MongoClient } from "mongodb";
+import mongoose from "mongoose";
 
-export default async function connectDB() {
-  const client = new MongoClient("mongodb://localhost:27017/storageApp");
-
-  await client.connect();
+try {
+  await mongoose.connect(
+    "mongodb://admin:admin@localhost/storageApp?authSource=admin"
+  );
   console.log("Connected to MongoDB");
-  const db = client.db("storageApp");
-  return db;
+} catch (err) {
+  console.error("Error connecting to MongoDB:", err);
 }
+

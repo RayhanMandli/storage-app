@@ -1,5 +1,4 @@
 import express from "express";
-import { writeFile } from "fs/promises";
 import { Db, ObjectId } from "mongodb";
 
 const router = express.Router();

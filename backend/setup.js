@@ -1,0 +1,86 @@
+import connectDB from "./middlewares/db.js";
+
+const client = await connectDB();
+const db = client.db("storageApp");
+
+await db.command({
+  collMod: "users",
+  validator: {
+    $jsonSchema: {
+      bsonType: "object",
+      required: ["_id", "email", "name", "password", "rootDirId"],
+      properties: {
+        _id: {
+          bsonType: "objectId",
+        },
+        email: {
+          bsonType: "string",
+        },
+        name: {
+          bsonType: "string",
+          minLength: 3,
+        },
+        password: {
+          bsonType: "string",
+          minLength: 4,
+        },
+        rootDirId: {
+          bsonType: "objectId",
+        },
+      },
+    },
+  },
+});
+
+await db.command({
+  collMod: "directories",
+  validator: {
+    $jsonSchema: {
+      bsonType: "object",
+      required: ["_id", "name", "parentDirId", "userId"],
+      properties: {
+        _id: {
+          bsonType: "objectId",
+        },
+        name: {
+          bsonType: "string",
+        },
+        parentDirId: {
+          bsonType: ["null", "objectId"],
+        },
+        userId: {
+          bsonType: "objectId",
+        },
+      },
+    },
+  },
+});
+
+await db.command({
+  collMod: "files",
+  validator: { 
+    $jsonSchema: {
+      bsonType: "object",
+      required: ["_id", "name", "parentDirId", "userId", "extension"],
+      properties: {
+        _id: {
+          bsonType: "objectId",
+        },
+        name: {
+          bsonType: "string",
+        },
+        parentDirId: {
+          bsonType: "objectId",
+        },
+        userId: {
+          bsonType: "objectId",
+        },
+        extension: {
+          bsonType: "string",
+        },
+      },
+    },
+  },
+});
+
+await client.close();

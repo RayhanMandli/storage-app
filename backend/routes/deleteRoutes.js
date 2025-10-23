@@ -4,6 +4,7 @@ import { ObjectId } from "mongodb";
 
 const router = express.Router();
 
+//single level directory deletion
 const deleteDirectory = async (db, id, next) => {
   const directoriesCollection = db.collection("directories");
   const filesCollection = db.collection("files");
@@ -18,10 +19,8 @@ const deleteDirectory = async (db, id, next) => {
       await rm(`./storage/${file._id.toString()}${file.extension}`, {
         force: true,
       });
-      const deletedFile = await filesCollection.deleteOne({ _id: file._id });
-      if (deletedFile.deletedCount === 0)
-        return { success: false, message: "Could not delete file" };
     }
+    const filesDelete = await filesCollection.deleteMany({ parentDirId: dir._id });
     const deletedDir = await directoriesCollection.deleteOne({ _id: dir._id });
     if (deletedDir.deletedCount === 0)
       return { success: false, message: "Could not delete directory" };
