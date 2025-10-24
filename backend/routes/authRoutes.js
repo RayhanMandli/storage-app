@@ -1,42 +1,35 @@
 import express from "express";
 import { Db, ObjectId } from "mongodb";
 import { User } from "../models/userModel.js";
+import { Directory } from "../models/directoryModel.js";
 const router = express.Router();
 
 // Register Route
 router.post("/register", async (req, res) => {
   const { name, email, password } = req.body;
-  // const userExists = usersData.find((user) => user.email === email);
-  // const id = crypto.randomUUID();
-  // const rootDirId = crypto.randomUUID();
-
-  const db = req.db;
-  const directoriesCollection = db.collection("directories");
-  const usersCollection = db.collection("users");
 
   try {
-    const userExists = await usersCollection.findOne({ email });
+    const userExists = await User.findOne({ email });
 
     if (userExists) {
       return res.status(409).json({ error: "Email already exists" });
     }
-    const userId = new ObjectId();
-    const rootDirId = new ObjectId();
 
-    await directoriesCollection.insertOne({
-      _id: rootDirId,
+    const newRootDir = await Directory({
       name: `root-${email}`,
-      parentDirId: null,
-      userId,
     });
+    console.log(newRootDir)
+    const rootDirId = newRootDir._id;
 
-    await usersCollection.insertOne({
-      _id: userId,
+    const newUser = await User({
       rootDirId,
       name,
       email,
       password,
     });
+    await newUser.save();
+    newRootDir.userId = newUser._id;
+    await newRootDir.save();
 
     res.status(201).json({ message: "User registered successfully" });
   } catch (error) {

@@ -8,7 +8,6 @@ const directorySchema = new Schema({
   parentDirId: {
     type: Schema.Types.ObjectId,
     default: null,
-    required: true,
     ref: "Directory",
   },
   userId: {
