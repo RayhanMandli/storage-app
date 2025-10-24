@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import "./App.css";
-import {  Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { DirectoryContext } from "./contexts/DirectoryContexts";
 import { useContext } from "react";
 
@@ -187,7 +187,7 @@ function DirectoryUI() {
 
   useEffect(() => {
     fetchData();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dirPath]);
 
   return (
@@ -214,10 +214,7 @@ function DirectoryUI() {
               <span style={{ fontSize: "13px", color: "#616161" }}>
                 {user.name}
               </span>
-              <button
-                className="toolbar-btn"
-                onClick={handleLogout}
-              >
+              <button className="toolbar-btn" onClick={handleLogout}>
                 Logout
               </button>
             </div>
@@ -260,7 +257,9 @@ function DirectoryUI() {
                 className="toolbar-btn"
                 onClick={() =>
                   handleFileUpload(
-                    dirPath ? dirPath.replace("directory/", "") : "root",
+                    dirPath !== "directory" && dirPath
+                      ? dirPath.replace("directory/", "")
+                      : "root",
                     file ? file.name : ""
                   )
                 }
@@ -306,7 +305,7 @@ function DirectoryUI() {
             </tr>
           </thead>
           <tbody>
-            {dirItems?.directories?.map(({ pDir, name, _id:id }, i) => (
+            {dirItems?.directories?.map(({ pDir, name, _id: id }, i) => (
               <tr key={i}>
                 <td>
                   <span role="img" aria-label="folder">
@@ -348,48 +347,50 @@ function DirectoryUI() {
                 </td>
               </tr>
             ))}
-            {dirItems?.files?.map(({ filename, _id: id, createdAt, pDir }, i) => (
-              <tr key={i}>
-                <td>
-                  <span role="img" aria-label="file">
-                    📄
-                  </span>
-                </td>
-                <td className="file-name">
-                  <Link to={`${BASE_URL}/files/${id}`}>{filename}</Link>
-                </td>
-                <td> File </td>
-                <td>
-                  <>
-                    <button
-                      className="action-btn"
-                      onClick={() => toggleRenameBox(filename)}
-                    >
-                      Rename
-                    </button>
-                    <button
-                      className="action-btn"
-                      onClick={() => handleRename(filename, id, "file")}
-                    >
-                      Save
-                    </button>
-                    <button
-                      className="action-btn"
-                      onClick={() => handleDelete(pDir, id, "file")}
-                    >
-                      Delete
-                    </button>
-                    <Link
-                      className="action-btn"
-                      to={`${BASE_URL}/files/${id}?action=download`}
-                    >
-                      Download
-                    </Link>
-                  </>
-                </td>
-                <td>{createdAt.slice(0, 10)}</td>
-              </tr>
-            ))}
+            {dirItems?.files?.map(
+              ({ filename, _id: id, createdAt, pDir }, i) => (
+                <tr key={i}>
+                  <td>
+                    <span role="img" aria-label="file">
+                      📄
+                    </span>
+                  </td>
+                  <td className="file-name">
+                    <Link to={`${BASE_URL}/files/${id}`}>{filename}</Link>
+                  </td>
+                  <td> File </td>
+                  <td>
+                    <>
+                      <button
+                        className="action-btn"
+                        onClick={() => toggleRenameBox(filename)}
+                      >
+                        Rename
+                      </button>
+                      <button
+                        className="action-btn"
+                        onClick={() => handleRename(filename, id, "file")}
+                      >
+                        Save
+                      </button>
+                      <button
+                        className="action-btn"
+                        onClick={() => handleDelete(pDir, id, "file")}
+                      >
+                        Delete
+                      </button>
+                      <Link
+                        className="action-btn"
+                        to={`${BASE_URL}/files/${id}?action=download`}
+                      >
+                        Download
+                      </Link>
+                    </>
+                  </td>
+                  <td>{createdAt.slice(0, 10)}</td>
+                </tr>
+              )
+            )}
           </tbody>
         </table>
       </div>
