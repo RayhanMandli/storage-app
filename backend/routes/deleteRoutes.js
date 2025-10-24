@@ -1,37 +1,58 @@
 import express from "express";
 import { rm } from "fs/promises";
+import { Directory } from "../models/directoryModel.js";
+import { File } from "../models/fileModel.js";
 import { ObjectId } from "mongodb";
 
 const router = express.Router();
 
-//single level directory deletion
-const deleteDirectory = async (db, id, next) => {
-  const directoriesCollection = db.collection("directories");
-  const filesCollection = db.collection("files");
-  const dir = await directoriesCollection.findOne({ _id: new ObjectId(id) });
+//recursive directory deletion
+const deleteDirectory = async (id, next) => {
+  const dir = await Directory.findById(id);
+
   if (!dir) return { success: false, message: "Directory not found" };
 
   try {
-    const filesToBeDeleted = await filesCollection
-      .find({ parentDirId: dir._id })
-      .toArray();
-    for (let file of filesToBeDeleted) {
-      await rm(`./storage/${file._id.toString()}${file.extension}`, {
-        force: true,
-      });
+    async function recursiveDelete(directoryId) {
+      try {
+        // 1. Delete all subdirectories recursively
+        const subdirs = await Directory.find({
+          parentDirId: directoryId,
+        });
+        for (const subdir of subdirs) {
+          await recursiveDelete(subdir._id);
+        }
+
+        // 2. Delete all files in this directory
+        const files = await File.find({ parentDirId: directoryId });
+        for (const file of files) {
+          try {
+            await rm(`./storage/${file._id}${file.extension}`, {
+              force: true,
+            });
+            await File.deleteOne({ _id: file._id });
+          } catch (err) {
+            console.error("Error deleting file:", err);
+          }
+        }
+
+        // 3. Delete this directory
+        await Directory.deleteOne({ _id: directoryId });
+      } catch (err) {
+        console.error("Error deleting directory:", err);
+        throw err;
+      }
     }
-    const filesDelete = await filesCollection.deleteMany({ parentDirId: dir._id });
-    const deletedDir = await directoriesCollection.deleteOne({ _id: dir._id });
-    if (deletedDir.deletedCount === 0)
-      return { success: false, message: "Could not delete directory" };
-    return { success: true, message: "directory deleted" };
+
+    // Usage
+    await recursiveDelete(id);
+    return { success: true, message: "Directory deleted successfully" };
   } catch (e) {
     next(e);
   }
 };
-const deleteFile = async (db, id) => {
-  const filesCollection = db.collection("files");
-  const file = await filesCollection.findOne({ _id: new ObjectId(id) });
+const deleteFile = async (id, next) => {
+  const file = await File.findById(id);
   const { extension } = file;
   if (!file) return { success: false, message: "File not found" };
 
@@ -39,29 +60,28 @@ const deleteFile = async (db, id) => {
     await rm(`./storage/${id}${extension}`, {
       force: true,
     });
-    const deletedFile = await filesCollection.deleteOne({ _id: file._id });
-    if (deletedFile.deletedCount === 0)
-      return { success: false, message: "Could not delete file" };
+    await File.deleteOne({ _id: file._id });
     return { success: true, message: "file deleted" };
   } catch (e) {
     return { success: false, message: e.message };
+    next(e);
   }
 };
 
-//Delete files
+//Delete files and directories
 router.delete("/:id", async (req, res, next) => {
   const { type } = req.query;
   const { id } = req.params;
-  const db = req.db;
+  // console.log(id);
 
   if (type === "file") {
-    const result = await deleteFile(db,id);
+    const result = await deleteFile(id, next);
     if (!result.success) {
       return res.status(500).json({ message: result.message });
     }
     res.status(200).json({ message: result.message });
   } else {
-    const result = await deleteDirectory(db, id, next);
+    const result = await deleteDirectory(id, next);
     try {
       if (!result.success) {
         return res.status(500).json({ message: result.message });

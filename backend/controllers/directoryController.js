@@ -27,17 +27,17 @@ export const getDirectoryController = async (req, res) => {
 export const createDirectoryController = async (req, res) => {
   const userId = req.user._id;
   const userRootDirId = req.user.rootDirId;
-  console.log(userRootDirId);
+  // console.log(userRootDirId);
   let parentDirId = req.headers.parentdirid;
 
   if (parentDirId !== "root") parentDirId = new ObjectId(parentDirId);
   else parentDirId = userRootDirId;
-  console.log(parentDirId);
+  // console.log(parentDirId);
   const { dirname } = req.params;
 
   try {
     const parentDir = await Directory.findById(parentDirId);
-    console.log(parentDir);
+    // console.log(parentDir);
     if (!parentDir)
       return res.status(400).json({ message: "Parent directory not found" });
 

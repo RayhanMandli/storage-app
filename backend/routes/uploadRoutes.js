@@ -15,7 +15,7 @@ router.post("/:filename", async (req, res, next) => {
     parentDirId = req.user.rootDirId;
   }
   let { filename } = req.params;
-  console.log(parentDirId);
+  // console.log(parentDirId);
   const extension = path.extname(filename);
   try {
     const newFile = await File.insertOne({

@@ -19,7 +19,7 @@ router.post("/register", async (req, res) => {
     const newRootDir = await Directory({
       name: `root-${email}`,
     });
-    console.log(newRootDir);
+    // console.log(newRootDir);
     const rootDirId = newRootDir._id;
 
     const newUser = await User({
