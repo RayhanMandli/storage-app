@@ -1,5 +1,4 @@
 import express from "express";
-import { Db, ObjectId } from "mongodb";
 import { User } from "../models/userModel.js";
 import { Directory } from "../models/directoryModel.js";
 
@@ -10,16 +9,9 @@ router.post("/register", async (req, res) => {
   const { name, email, password } = req.body;
 
   try {
-    const userExists = await User.findOne({ email });
-
-    if (userExists) {
-      return res.status(409).json({ error: "Email already exists" });
-    }
-
     const newRootDir = await Directory({
       name: `root-${email}`,
     });
-    // console.log(newRootDir);
     const rootDirId = newRootDir._id;
 
     const newUser = await User({
@@ -34,7 +26,11 @@ router.post("/register", async (req, res) => {
 
     res.status(201).json({ message: "User registered successfully" });
   } catch (error) {
-    console.error("Error writing to file:", error);
+    if (error.code === 11000) {
+      //duplicate key error
+      return res.status(400).json({ error: "Email already exists" });
+    }
+    console.log(error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
