@@ -7,7 +7,14 @@ export async function authMiddleware(req, res, next) {
   if (!userId) {
     return res.status(401).json({ error: "Unauthorized" });
   }
-  const user = await User.findById(userId);
+  const { id: idPart, expiry: expiryInSeconds } = JSON.parse(
+    Buffer.from(userId, "base64url").toString()
+  );
+  const currentInSeconds = Math.floor(Date.now() / 1000);
+  if (currentInSeconds > expiryInSeconds) {
+    return res.status(401).json({ error: "Session expired" });
+  }
+  const user = await User.findById(idPart);
   if (!user) {
     return res.status(401).json({ error: "Unauthorized" });
   }

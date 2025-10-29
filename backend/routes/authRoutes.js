@@ -46,12 +46,21 @@ router.post("/login", async (req, res) => {
     return res.status(401).json({ error: "Invalid email or password" });
   }
   // console.log(user)
-  res.cookie("userId", user._id.toString(), {
-    maxAge: 24 * 60 * 60 * 1000,
-    httpOnly: true,
-    sameSite: "none",
-    secure: true,
-  });
+  const cookieObj = {
+    id: user._id,
+    expiry: Date.now() / 1000 + 60 * 60 * 24 * 7,
+  };
+
+  res.cookie(
+    "userId",
+    Buffer.from(JSON.stringify(cookieObj)).toString("base64url"),
+    {
+      maxAge: 24 * 60 * 60 * 1000,
+      httpOnly: true,
+      sameSite: "none",
+      secure: true,
+    }
+  );
   res.json({ message: "Login successful" });
 });
 
