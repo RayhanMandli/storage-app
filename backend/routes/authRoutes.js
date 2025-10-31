@@ -1,6 +1,7 @@
 import express from "express";
 import { User } from "../models/userModel.js";
 import { Directory } from "../models/directoryModel.js";
+import crypto from "node:crypto";
 
 const router = express.Router();
 
@@ -21,7 +22,7 @@ router.post("/register", async (req, res) => {
       password,
     });
     await newUser.save();
-    newRootDir.userId = newUser._id;
+    newRootDir.token = newUser._id;
     await newRootDir.save();
 
     res.status(201).json({ message: "User registered successfully" });
@@ -48,25 +49,23 @@ router.post("/login", async (req, res) => {
   // console.log(user)
   const cookieObj = {
     id: user._id,
-    expiry: Date.now() / 1000 + 60 * 60 * 24 * 7,
+    expiry: Math.round(Date.now() / 1000 + 10),
   };
+  const stringifiedObj = JSON.stringify(cookieObj);
 
-  res.cookie(
-    "userId",
-    Buffer.from(JSON.stringify(cookieObj)).toString("base64url"),
-    {
-      maxAge: 24 * 60 * 60 * 1000,
-      httpOnly: true,
-      sameSite: "none",
-      secure: true,
-    }
-  );
+  res.cookie("token", Buffer.from(stringifiedObj).toString("base64url"), {
+    maxAge: 24 * 60 * 60 * 1000,
+    signed: true,
+    httpOnly: true,
+    sameSite: "none",
+    secure: true,
+  });
   res.json({ message: "Login successful" });
 });
 
 //Logout Route
 router.post("/logout", (req, res) => {
-  res.clearCookie("userId", { httpOnly: true, sameSite: "none", secure: true });
+  res.clearCookie("token", { httpOnly: true, sameSite: "none", secure: true });
   res.json({ message: "Logout successful" });
 });
 
