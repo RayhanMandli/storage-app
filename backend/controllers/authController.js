@@ -1,9 +1,13 @@
 import { User } from "../models/userModel.js";
 import { Directory } from "../models/directoryModel.js";
-import crypto from "node:crypto";
+import bcrypt from "bcrypt";
 
-const hashPassword = (password) => {
-  return crypto.createHash("sha256").update(password).digest("hex");
+const hashPassword = async (password) => {
+  return bcrypt.hash(password, 12);
+};
+
+const comparePassword = async (password, hashedPassword) => {
+  return bcrypt.compare(password, hashedPassword);
 };
 
 export const userRegister = async (req, res) => {
@@ -19,7 +23,7 @@ export const userRegister = async (req, res) => {
       rootDirId,
       name,
       email,
-      password: hashPassword(password),
+      password: await hashPassword(password),
     });
     await newUser.save();
     newRootDir.userId = newUser._id;
@@ -42,9 +46,12 @@ export const userLogin = async (req, res) => {
   if (!user) {
     return res.status(401).json({ error: "Invalid email or password" });
   }
-  if (user.password !== hashPassword(password)) {
+
+  const isPasswordValid = await comparePassword(password, user.password);
+  if (!isPasswordValid) {
     return res.status(401).json({ error: "Invalid email or password" });
   }
+
   const cookieObj = {
     id: user._id,
     expiry: Math.round(Date.now() / 1000 + 10),

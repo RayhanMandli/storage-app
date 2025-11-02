@@ -1,7 +1,7 @@
-import connectDB from "./middlewares/db.js";
+import "./middlewares/db.js";
+import mongoose from "mongoose";
 
-const client = await connectDB();
-const db = client.db("storageApp");
+const db = mongoose.connection.db;
 
 await db.command({
   collMod: "users",
@@ -27,6 +27,9 @@ await db.command({
         rootDirId: {
           bsonType: "objectId",
         },
+        _v: {
+          bsonType: "int",
+        },
       },
     },
   },
@@ -51,6 +54,9 @@ await db.command({
         userId: {
           bsonType: "objectId",
         },
+        _v: {
+          bsonType: "int",
+        },
       },
     },
   },
@@ -58,7 +64,7 @@ await db.command({
 
 await db.command({
   collMod: "files",
-  validator: { 
+  validator: {
     $jsonSchema: {
       bsonType: "object",
       required: ["_id", "name", "parentDirId", "userId", "extension"],
@@ -78,9 +84,12 @@ await db.command({
         extension: {
           bsonType: "string",
         },
+        _v: {
+          bsonType: "int",
+        },
       },
     },
   },
 });
 
-await client.close();
+await mongoose.connection.getClient().close();
