@@ -30,6 +30,7 @@ export const uploadFileController = async (req, res, next) => {
       res.status(200).json({ message: "File uploaded successfully" });
     });
   } catch (error) {
+    console.log(error.errInfo.details.schemaRulesNotSatisfied)
     res.status(500).json({ message: "File upload failed" });
     next(error);
   }

@@ -163,6 +163,25 @@ function DirectoryUI() {
       console.error("Error during logout:", error);
     }
   };
+  const handleLogoutAll = async () => {
+    try {
+      const response = await fetch(`${BASE_URL}/auth/all-logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await response.json();
+      if (response.ok) {
+        console.log(data.message);
+        setLoggedIn(false);
+        setUser({});
+        navigate("/login");
+      } else {
+        console.error("Failed to logout");
+      }
+    } catch (error) {
+      console.error("Error during logout:", error);
+    }
+  };
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -216,6 +235,9 @@ function DirectoryUI() {
               </span>
               <button className="toolbar-btn" onClick={handleLogout}>
                 Logout
+              </button>
+              <button className="toolbar-btn" onClick={handleLogoutAll}>
+                Logout All
               </button>
             </div>
           ) : (
