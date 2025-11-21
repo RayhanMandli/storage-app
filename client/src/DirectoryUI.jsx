@@ -19,6 +19,7 @@ function DirectoryUI() {
   const [user, setUser] = useState({});
   const [loggedIn, setLoggedIn] = useState(false);
 
+
   let { "*": dirPath } = useParams();
   console.log(dirPath);
   const navigate = useNavigate();

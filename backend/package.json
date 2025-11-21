@@ -7,7 +7,9 @@
         "cors": "^2.8.5",
         "crypto": "^1.0.1",
         "express": "^5.1.0",
-        "mongodb": "^6.20.0"
+        "mongodb": "^6.20.0",
+        "resend": "^6.5.2",
+        "winston": "^3.18.3"
     },
     "scripts": {
         "dev": "node --watch app.js"

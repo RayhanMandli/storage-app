@@ -1,6 +1,7 @@
 import { Directory } from "../models/directoryModel.js";
 import { File } from "../models/fileModel.js";
 import { ObjectId } from "mongodb";
+import { logDirectoryOperation, logError, logSecurity, logInfo } from "../utils/logger.js";
 
 export const getDirectoryController = async (req, res) => {
   const userId = req.user._id;
