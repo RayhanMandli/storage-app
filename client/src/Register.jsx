@@ -7,7 +7,7 @@ const Register = () => {
 
     const [formData, setFormData] = useState({
         name: "Rayhan Mandli",
-        email: "rayhan@gmail.com",
+        email: "mandlirayhan@gmail.com",
         password: "abcd",
         otp: "",
     });
