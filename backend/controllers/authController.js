@@ -4,6 +4,7 @@ import Session from "../models/sessionModel.js";
 import { logAuth, logError, logSecurity } from "../utils/logger.js";
 import { Otp } from "../models/otpModel.js";
 import { otpHandler } from "../services/sendOtpService.js";
+import { verifyIdTokenAndLoginWithGoogle } from "../services/googleAuthService.js";
 
 export const userRegister = async (req, res) => {
     const { name, email, password } = req.body;
@@ -189,5 +190,90 @@ export const verifyOtp = async (req, res) => {
         res.json({ message: "OTP verified successfully" });
     } catch (error) {
         res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+export const handleGoogleLogin = async (req, res) => {
+    const idToken = req.body.credential;
+    const userData = await verifyIdTokenAndLoginWithGoogle(idToken);
+    if (!userData) {
+        return res.status(401).json({ error: "Invalid ID token" });
+    }
+
+    const { email, name, sub: googleId, email_verified } = userData;
+    if (!email_verified) {
+        return res.status(400).json({ error: "Email not verified" });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+        // Create root directory for the new user
+        const newRootDir = await Directory({
+            name: `root-${email}`,
+        });
+        const rootDirId = newRootDir._id;
+
+        // Create new user with hashed password
+        const newUser = await User({
+            rootDirId,
+            name,
+            googleId,
+            email,
+        });
+        await newUser.save();
+
+        // Link root directory to user
+        newRootDir.userId = newUser._id;
+        await newRootDir.save();
+
+        // Log successful registration
+        logAuth("login with google", newUser._id, email, true);
+
+        // Create new session
+        const session = await Session.create({ userId: newUser._id });
+
+        // Set secure cookie with session ID
+        res.cookie("sid", session.id, {
+            maxAge: 24 * 60 * 60 * 1000, // 24 hours
+            signed: true,
+            httpOnly: true,
+            secure: true,
+            sameSite: "none",
+        });
+
+        return res.status(201).json({ message: "User logged in with google" });
+    }
+    if (user.googleId) {
+        if (user.googleId !== googleId) {
+            return res.status(400).json({ error: "Google ID mismatch" });
+        } else {
+            const sessionCount = await Session.countDocuments({
+                userId: user._id,
+            });
+            if (sessionCount >= 2) {
+                // Delete oldest session to maintain limit
+                const oldestSession = await Session.findOne({
+                    userId: user._id,
+                }).sort({
+                    createdAt: 1,
+                });
+                await Session.deleteOne({ _id: oldestSession._id });
+
+                logAuth("session_cleanup", user._id, email, true, null);
+            }
+            // Create new session
+            const session = await Session.create({ userId: user._id });
+
+            // Set secure cookie with session ID
+            res.cookie("sid", session.id, {
+                maxAge: 24 * 60 * 60 * 1000, // 24 hours
+                signed: true,
+                httpOnly: true,
+                sameSite: "none",
+                secure: true,
+            });
+
+            res.status(201).json({ message: "User logged in with google" });
+        }
     }
 };

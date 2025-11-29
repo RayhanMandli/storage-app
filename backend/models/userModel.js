@@ -7,6 +7,10 @@ const userSchema = new Schema({
         required: true,
         minLength: 3,
     },
+    googleId: {
+        type: String,
+        unique: true,
+    },
     email: {
         type: String,
         required: true,
@@ -18,7 +22,6 @@ const userSchema = new Schema({
     },
     password: {
         type: String,
-        required: true,
         minLength: 4,
     },
     rootDirId: {

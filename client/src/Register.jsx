@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import "./Auth.css";
+import { GoogleLogin } from "@react-oauth/google";
 
 const Register = () => {
     const BASE_URL = "http://localhost:4000";
@@ -121,6 +122,30 @@ const Register = () => {
             setServerError("Something went wrong. Please try again.");
         }
     };
+    const handleGoogleLogin = async (credentialResponse) => {
+        try {
+            const response = await fetch(`${BASE_URL}/auth/google`, {
+                method: "POST",
+                body: JSON.stringify({
+                    credential: credentialResponse.credential,
+                }),
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                credentials: "include",
+            });
+            if (response.ok) {
+                navigate("/");
+            } else {
+                console.log("Google Login Failed");
+                const data = await response.json();
+                setServerError(data.error || "Google Login Failed");
+            }
+        } catch (error) {
+            console.error("Error:", error);
+            setServerError("Something went wrong. Please try again.");
+        }
+    };
 
     return (
         <div className="container">
@@ -225,7 +250,18 @@ const Register = () => {
                     {isSuccess ? "Registration Successful" : "Register"}
                 </button>
             </form>
-
+            {/* Google Login Button */}
+            <div className="google-login">
+                <GoogleLogin
+                    onSuccess={(credentialResponse) => {
+                        handleGoogleLogin(credentialResponse);
+                    }}
+                    onError={() => {
+                        console.log("Login Failed");
+                    }}
+                    useOneTap
+                />
+            </div>
             {/* Link to the login page */}
             <p className="link-text">
                 Already have an account? <Link to="/login">Login</Link>
