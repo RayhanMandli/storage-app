@@ -1,5 +1,6 @@
 import express from "express";
 import {
+    handleGithubLogin,
     handleGoogleLogin,
     sendOtp,
     userLogin,
@@ -18,6 +19,7 @@ router.post("/register", userRegister);
 router.post("/login", userLogin);
 
 router.post("/google", handleGoogleLogin)
+router.get("/github/callback", handleGithubLogin)
 
 router.post("/logout", userLogout);
 

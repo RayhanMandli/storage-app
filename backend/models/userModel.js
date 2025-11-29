@@ -11,6 +11,10 @@ const userSchema = new Schema({
         type: String,
         unique: true,
     },
+    githubId: {
+        type: String,
+        unique: true,
+    },
     email: {
         type: String,
         required: true,
@@ -40,6 +44,6 @@ userSchema.pre("save", async function (next) {
 
 userSchema.methods.comparePassword = async function (candidatePassword) {
     return bcrypt.compare(candidatePassword, this.password);
-}
+};
 
 export const User = model("User", userSchema);

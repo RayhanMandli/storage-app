@@ -262,6 +262,12 @@ const Register = () => {
                     useOneTap
                 />
             </div>
+            {/* Github Login Button */}
+            <div className="github-login">
+                <a href="https://github.com/login/oauth/authorize?client_id=Ov23li5iOPKgLejYkQuQ&scope=read:user user:email&redirect_uri=http://localhost:4000/auth/github/callback">
+                    <button>Login with GitHub</button>
+                </a>
+            </div>
             {/* Link to the login page */}
             <p className="link-text">
                 Already have an account? <Link to="/login">Login</Link>
