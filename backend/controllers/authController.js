@@ -371,7 +371,7 @@ export const handleGithubLogin = async (req, res) => {
         return res.redirect("http://localhost:5173");
     }
     if (user.githubId) {
-        if (user.githubId !== githubId) {
+        if (user.githubId !== ""+githubId) {
             return res.status(400).json({ error: "GitHub ID mismatch" });
         } else {
             const sessionCount = await Session.countDocuments({
