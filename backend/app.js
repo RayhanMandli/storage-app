@@ -8,15 +8,16 @@ import filesRoutes from "./routes/filesRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
+import integrationRoutes from "./routes/integrationRoutes.js";
 import { authMiddleware } from "./middlewares/auth.js";
 
-const secret = "my-secret-key"
+const secret = "my-secret-key";
 const app = express();
 app.use(
-  cors({
-    credentials: true,
-    origin: "http://localhost:5173",
-  })
+    cors({
+        credentials: true,
+        origin: "http://localhost:5173",
+    })
 );
 app.use(cookieParser(secret));
 app.use(express.json());
@@ -33,14 +34,15 @@ app.use("/files", authMiddleware, filesRoutes);
 app.use("/upload", authMiddleware, uploadRoutes);
 app.use("/user", authMiddleware, userRoutes);
 app.use("/auth", authRoutes);
+app.use("/integrations", authMiddleware, integrationRoutes);
 
 //Global error handler
 app.use((err, req, res, next) => {
-  console.error(err);
-  res.status(500).json({ message: "Internal Server Error" });
+    console.error(err);
+    res.status(500).json({ message: "Internal Server Error" });
 });
 
 //Starting the server
 app.listen(4000, () => {
-  console.log("Server is running on port 4000");
+    console.log("Server is running on port 4000");
 });

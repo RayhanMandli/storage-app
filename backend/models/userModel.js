@@ -33,6 +33,12 @@ const userSchema = new Schema({
         required: true,
         ref: "Directory",
     },
+    googleDrive: {
+        access_token: { type: String, default: null },
+        refresh_token: { type: String, default: null },
+        expires_at: { type: Number, default: null },
+        scope: { type: String, default: null },
+    },
 });
 
 // Hashing password before saving
