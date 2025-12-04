@@ -5,6 +5,7 @@ import {
     isOwner,
 } from "../middlewares/authorization.js";
 import {
+    changeUserRoleById,
     getAllUsers,
     getDeletedUsers,
     getUserProfile,
@@ -26,6 +27,7 @@ router.post("/logout/:userId", isAuthority, logoutUserById);
 // soft delete user
 router.patch("/delete/:userId", isHigherAuthority, softDeleteUserById);
 router.patch("/recover/:userId", isOwner, recoverSoftDeletedUserById);
+router.patch("/change-role/:userId", isAuthority, changeUserRoleById);
 
 // hard delete user
 router.delete("/delete/:userId/hard", isHigherAuthority, hardDeleteUserById);

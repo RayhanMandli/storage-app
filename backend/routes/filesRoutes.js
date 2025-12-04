@@ -1,5 +1,6 @@
 import express from "express";
 import { renameFileController, serveFileController } from "../controllers/fileController.js";
+import { requireDataPermission } from "../middlewares/accessPermission.js";
 
 const router = express.Router();
 

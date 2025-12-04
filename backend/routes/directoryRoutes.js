@@ -1,6 +1,10 @@
 import express from "express";
-import { Db, ObjectId } from "mongodb";
-import { getDirectoryController, createDirectoryController, updateDirectoryController } from "../controllers/directoryController.js";
+import {
+    getDirectoryController,
+    createDirectoryController,
+    updateDirectoryController,
+} from "../controllers/directoryController.js";
+import { requireDataPermission } from "../middlewares/accessPermission.js";
 const router = express.Router();
 
 router.get("/{:id}", getDirectoryController);

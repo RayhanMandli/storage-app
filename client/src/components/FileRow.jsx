@@ -4,7 +4,7 @@ export default function FileRow({ file, baseUrl, onToggleRename, onRename, onDel
   const id = file._id || file.id;
   const name = file.name || file.filename;
   const downloadHref = isDrive ? `${baseUrl}/integrations/drive/file/download/${id}?action=download` : `${baseUrl}/files/${id}?action=download`;
-  const viewHref = isDrive ? `${baseUrl}/integrations/drive/file/download/${id}` : `${baseUrl}/files/${id}?action=download`;
+  const viewHref = isDrive ? `${baseUrl}/integrations/drive/file/download/${id}` : `${baseUrl}/files/${id}`;
   return (
     <tr key={id}>
       <td><span role="img" aria-label="file">📄</span></td>

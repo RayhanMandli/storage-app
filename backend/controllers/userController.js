@@ -1,6 +1,20 @@
 import { User } from "../models/userModel.js";
 import Session from "../models/sessionModel.js";
 import { Directory } from "../models/directoryModel.js";
+import { canChangeRole } from "../utils/rbac.js";
+
+const userRoleChangeChecker = {
+    owner: ["admin", "manager", "user"],
+    admin: ["admin", "manager", "user"],
+    manager: ["manager", "user"],
+};
+
+const rolePreferences = {
+    owner: 4,
+    admin: 3,
+    manager: 2,
+    user: 1,
+};
 
 export const getUserProfile = (req, res) => {
     res.status(200).json({
@@ -22,7 +36,7 @@ export const getDeletedUsers = async (req, res) => {
 export const getAllUsers = async (req, res) => {
     try {
         const users = await User.find({ isDeleted: false })
-            .select("_id name")
+            .select("_id name role")
             .lean();
         for (const user of users) {
             const sessionCount = await Session.countDocuments({
@@ -34,7 +48,15 @@ export const getAllUsers = async (req, res) => {
                 user.isLoggedIn = false;
             }
         }
-        res.status(200).json({ users, role: req.user.role });
+        const currentUser = {
+            role: req.user.role,
+            id: req.user._id,
+            name: req.user.name,
+        };
+        res.status(200).json({
+            users,
+            currentUser,
+        });
     } catch (error) {
         res.status(500).json({ message: "Failed to fetch users" });
     }
@@ -84,5 +106,39 @@ export const hardDeleteUserById = async (req, res) => {
         res.status(200).json({ message: "User hard deleted successfully" });
     } catch (error) {
         res.status(500).json({ error: "Failed to hard delete user" });
+    }
+};
+export const changeUserRoleById = async (req, res) => {
+    const { userId } = req.params;
+    const { newRole } = req.body;
+    const userToBeChanged = await User.findById(userId);
+    const targetRole = userToBeChanged.role;
+
+    if (userId === req.user._id.toString()) {
+        return res
+            .status(403)
+            .json({ error: "Forbidden: Cannot change your own role" });
+    }
+
+    if (!userToBeChanged) {
+        return res.status(404).json({ message: "User not found" });
+    }
+
+    const { allowed, message } = canChangeRole(
+        req.user.role,
+        targetRole,
+        newRole
+    );
+    if (!allowed) {
+        return res.status(403).json({ error: message });
+    }
+    try {
+        userToBeChanged.role = newRole;
+        await userToBeChanged.save();
+        return res
+            .status(200)
+            .json({ message: "User role updated successfully" });
+    } catch (error) {
+        return res.status(500).json({ error: "Failed to update user role" });
     }
 };

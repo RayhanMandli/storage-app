@@ -111,6 +111,47 @@
   background-color: #b91c1c;
 }
 
+/* Role button variant */
+.users-table td.action button.role-btn {
+  background-color: #8b5cf6;
+}
+
+.users-table td.action button.role-btn:hover:not(:disabled) {
+  background-color: #7c3aed;
+}
+
+/* Recover button variant */
+.users-table td.action button.recover-btn {
+  background-color: #059669;
+}
+
+.users-table td.action button.recover-btn:hover:not(:disabled) {
+  background-color: #047857;
+}
+
+/* Filter button */
+.filter-btn {
+  margin: 1rem 0;
+  padding: 0.625rem 1.25rem;
+  background-color: #0369a1;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.filter-btn:hover {
+  background-color: #025a8a;
+  transform: translateY(-1px);
+}
+
+.filter-btn:active {
+  transform: translateY(0);
+}
+
 /* Row hover and focus */
 .users-table tbody tr:hover {
   background: var(--row-hover);
