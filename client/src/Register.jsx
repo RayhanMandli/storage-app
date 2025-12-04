@@ -7,8 +7,8 @@ const Register = () => {
     const BASE_URL = "http://localhost:4000";
 
     const [formData, setFormData] = useState({
-        name: "Rayhan Mandli",
-        email: "mandlirayhan@gmail.com",
+        name: " Mandli",
+        email: "",
         password: "abcd",
         otp: "",
     });

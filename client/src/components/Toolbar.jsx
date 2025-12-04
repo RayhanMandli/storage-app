@@ -1,5 +1,8 @@
 // Pure presentational toolbar component.
 // Receives only UI related props & callbacks. All logic/state lives in parent.
+
+import { Link } from "react-router-dom";
+
 // IMPORTANT: Does not alter any backend interaction. Buttons call through provided handlers.
 export default function Toolbar({
   onNewFolderToggle,
@@ -15,6 +18,7 @@ export default function Toolbar({
   return (
     <div className="explorer-toolbar">
       <div className="btn-group">
+        <Link style={{color: "gray", fontSize: "12px"}} to="/users">See Users</Link>
         <button className="toolbar-btn" onClick={onNewFolderToggle}>New Folder</button>
         <button className="toolbar-btn" onClick={onUploadToggle}>Upload</button>
         {showDriveConnect && (

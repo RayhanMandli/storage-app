@@ -211,6 +211,13 @@ export const handleGoogleLogin = async (req, res) => {
     }
 
     const user = await User.findOne({ email });
+    if (user && user.isDeleted) {
+        return res
+            .status(403)
+            .json({
+                error: "Account is deleted. Contact owner of this app to recover your account.",
+            });
+    }
     if (!user) {
         // Create root directory for the new user
         const newRootDir = await Directory({
@@ -371,7 +378,7 @@ export const handleGithubLogin = async (req, res) => {
         return res.redirect("http://localhost:5173");
     }
     if (user.githubId) {
-        if (user.githubId !== ""+githubId) {
+        if (user.githubId !== "" + githubId) {
             return res.status(400).json({ error: "GitHub ID mismatch" });
         } else {
             const sessionCount = await Session.countDocuments({

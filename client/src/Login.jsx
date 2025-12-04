@@ -6,7 +6,7 @@ const Login = () => {
     const BASE_URL = "http://localhost:4000";
     const [otpSent, setOtpSent] = useState(false);
     const [formData, setFormData] = useState({
-        email: "mandlirayhan@gmail.com",
+        email: "",
         password: "abcd",
         otp: "",
     });

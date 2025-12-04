@@ -2,6 +2,11 @@ import { Schema, model } from "mongoose";
 import bcrypt from "bcrypt";
 
 const userSchema = new Schema({
+    role: {
+        type: String,
+        enum: ["user", "admin", "manager", "owner"],
+        default: "user",
+    },
     name: {
         type: String,
         required: true,
@@ -10,10 +15,12 @@ const userSchema = new Schema({
     googleId: {
         type: String,
         unique: true,
+        sparse: true,
     },
     githubId: {
         type: String,
         unique: true,
+        sparse: true,
     },
     email: {
         type: String,
@@ -38,6 +45,10 @@ const userSchema = new Schema({
         refresh_token: { type: String, default: null },
         expires_at: { type: Number, default: null },
         scope: { type: String, default: null },
+    },
+    isDeleted: {
+        type: Boolean,
+        default: false,
     },
 });
 
