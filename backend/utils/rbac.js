@@ -36,10 +36,21 @@ export const dataAccessRules = {
     },
 };
 
-export function canAccessUserData(requesterRole, action) {
-    const role = dataAccessRules[requesterRole];
-    if (!role) return false;
-    return role[action] === true;
+export function canAccessUserData(requester, action, file) {
+    if (requester.role === "owner") return true;
+    if (requester.role === "admin" && action === "canView") return true;
+    if (file.userId.toString() === requester._id.toString()) return true;
+    const sharedEntry = file.sharedWith.find((e) => {
+        return e.userId.toString() === requester._id.toString();
+    });
+    if (sharedEntry) {
+        if (sharedEntry.permissions === "editor") return true;
+        if (sharedEntry.permissions === "viewer" && action === "canView")
+            return true;
+        return false;
+    }
+    if(file.linkShare && action==="canView") return true;
+    return false;
 }
 export function canChangeRole(requesterRole, targetRole, newRole) {
     // 1. Cannot downgrade or upgrade someone equal or higher than you

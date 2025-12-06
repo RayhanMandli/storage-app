@@ -11,6 +11,7 @@ import RenameModal from "./components/RenameModal";
 import DirectoryRow from "./components/DirectoryRow";
 import FileRow from "./components/FileRow";
 import EmptyState from "./components/EmptyState";
+import ShareModal from "./components/ShareModal";
 
 /**
  * DirectoryUI - improved, refactored version of your original component.
@@ -32,8 +33,12 @@ function DirectoryUI() {
     const [file, setFile] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [foldername, setFoldername] = useState("");
     const [googleDriveConnected, setGoogleDriveConnected] = useState(false);
+    const [shareModalOpen, setShareModalOpen] = useState(false);
+    const [shareItem, setShareItem] = useState(null);
+    const [shareItemType, setShareItemType] = useState(null);
 
     const [user, setUser] = useState({});
     const [loggedIn, setLoggedIn] = useState(false);
@@ -71,7 +76,8 @@ function DirectoryUI() {
         let data;
         try {
             data = await res.json();
-        } catch (err) {
+        } catch (error) {
+            console.log(error);
             data = null;
         }
         return { res, data };
@@ -216,6 +222,159 @@ function DirectoryUI() {
         }
     };
 
+    const toggleMenu = () => setIsMenuOpen((v) => !v);
+    const handleLogoutWithClose = async () => {
+        setIsMenuOpen(false);
+        await handleLogout();
+    };
+    const handleLogoutAllWithClose = async () => {
+        setIsMenuOpen(false);
+        await handleLogoutAll();
+    };
+    const handleSetPasswordWithClose = async () => {
+        setIsMenuOpen(false);
+        navigate("/set-password");
+    };
+
+    // --------------------
+    // Share modal handlers (placeholder functions for backend integration)
+    // --------------------
+    const handleOpenShareModal = (item, itemType) => {
+        setShareItem(item);
+        setShareItemType(itemType);
+        setShareModalOpen(true);
+    };
+
+    const handleCloseShareModal = () => {
+        setShareModalOpen(false);
+        setShareItem(null);
+        setShareItemType(null);
+    };
+
+    const handleShareUser = async (email, permission) => {
+        try {
+            const {res, data} = await apiFetch(`${BASE_URL}/share/${shareItem._id}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({
+                    itemType: shareItemType,
+                    email,
+                    permission,
+                }),
+            });
+            if (!res.ok) {
+                throw new Error(data?.message || "Failed to share item");
+            }
+            setMessage("Item shared successfully");
+            if (shareItem.sharedWith) {
+                shareItem.sharedWith.push({
+                    userId: Date.now().toString(),
+                    email,
+                    permission,
+                });
+            } else {
+                shareItem.sharedWith = [
+                    {
+                        userId: Date.now().toString(),
+                        email,
+                        permission,
+                    },
+                ];
+            }
+            setShareItem({ ...shareItem });
+        } catch (err) {
+            console.error(err);
+            setMessage(err.message || "Failed to share item");
+            return;
+        }
+    };
+
+    const handleUpdateShare = async (userId, newPermission) => {
+        // Placeholder: Backend endpoint would be PATCH /api/share/:shareId
+        console.log("Update share permission:", { userId, newPermission });
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        // Update local state
+        if (shareItem.sharedWith) {
+            const userIndex = shareItem.sharedWith.findIndex(
+                (u) => (u._id || u.userId) === userId
+            );
+            if (userIndex !== -1) {
+                shareItem.sharedWith[userIndex].permission = newPermission;
+                setShareItem({ ...shareItem });
+            }
+        }
+    };
+
+    const handleRemoveShare = async (userId) => {
+        try {
+            const {res,data} = await apiFetch(
+                `${BASE_URL}/share/${shareItem._id}/${userId}`,
+                {
+                    method: "DELETE",
+                    credentials: "include",
+                }
+            );
+            if (!res.ok) {
+                throw new Error(data?.message || "Failed to share item");
+            }
+            setMessage("Item shared successfully");
+            if (shareItem.sharedWith) {
+                shareItem.sharedWith = shareItem.sharedWith.filter(
+                    (u) => (u._id || u.userId) !== userId
+                );
+                setShareItem({ ...shareItem });
+            }
+        } catch (err) {
+            console.error(err);
+            setMessage(err.message || "Failed to share item");
+            return;
+        }
+    };
+
+    const handleEnableLinkShare = async (permission) => {
+        // Placeholder: Backend endpoint would be POST /api/share/link
+        console.log("Enable link sharing:", {
+            itemId: shareItem._id || shareItem.id,
+            permission,
+        });
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        // Update local state
+        shareItem.linkShare = {
+            enabled: true,
+            token: Math.random().toString(36).substring(7),
+            permission,
+        };
+        setShareItem({ ...shareItem });
+    };
+
+    const handleDisableLinkShare = async () => {
+        // Placeholder: Backend endpoint would be DELETE /api/share/link/:itemId
+        console.log("Disable link sharing:", {
+            itemId: shareItem._id || shareItem.id,
+        });
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        // Update local state
+        if (shareItem.linkShare) {
+            shareItem.linkShare.enabled = false;
+            setShareItem({ ...shareItem });
+        }
+    };
+
+    const handleUpdateLinkPermission = async (permission) => {
+        // Placeholder: Backend endpoint would be PATCH /api/share/link/:itemId
+        console.log("Update link permission:", {
+            itemId: shareItem._id || shareItem.id,
+            permission,
+        });
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        // Update local state
+        if (shareItem.linkShare) {
+            shareItem.linkShare.permission = permission;
+            setShareItem({ ...shareItem });
+        }
+    };
+
     // --------------------
     // Google Drive connect & list
     // --------------------
@@ -295,7 +454,7 @@ function DirectoryUI() {
                 ? data.directories
                 : [];
             const files = Array.isArray(data.files) ? data.files : [];
-
+            console.log(data);
             setDirItems({ directories, files });
 
             if (directories.length === 0 && files.length === 0) {
@@ -404,104 +563,168 @@ function DirectoryUI() {
     // Render
     // --------------------
     return (
-      <div className="explorer-container">
-        {/* Toolbar */}
-        <Toolbar
-          onNewFolderToggle={() => setIsCreating(v => !v)}
-          onUploadToggle={() => setIsUploading(v => !v)}
-          showDriveConnect={!googleDriveConnected}
-          onDriveConnect={handleDriveConnect}
-          currentPathLabel={buildPath()}
-          loggedIn={loggedIn}
-          userName={user.name}
-          onLogout={handleLogout}
-          onLogoutAll={handleLogoutAll}
-        />
+        <div className="explorer-container">
+            {/* Toolbar */}
+            <Toolbar
+                onNewFolderToggle={() => setIsCreating((v) => !v)}
+                onUploadToggle={() => setIsUploading((v) => !v)}
+                showDriveConnect={!googleDriveConnected}
+                onDriveConnect={handleDriveConnect}
+                currentPathLabel={buildPath()}
+                loggedIn={loggedIn}
+                userName={user.name}
+                userHasPassword={user.hasPassword}
+                onLogout={handleLogoutWithClose}
+                onLogoutAll={handleLogoutAllWithClose}
+                onSetPassword={handleSetPasswordWithClose}
+                isMenuOpen={isMenuOpen}
+                onMenuToggle={toggleMenu}
+            />
 
-        {/* Modals */}
-        <div>
-          {isCreating && (
-            <NewFolderModal
-              value={foldername}
-              onChange={setFoldername}
-              onConfirm={createFolderOnServer}
-              onCancel={() => setIsCreating(false)}
-            />
-          )}
-          {isUploading && (
-            <UploadModal
-              onFileSelect={setFile}
-              onConfirm={() => uploadFileToServer(buildParentIdFromPath(dirPath), file ? file.name : "")}
-              onCancel={() => setIsUploading(false)}
-            />
-          )}
-          {isRenaming && (
-            <RenameModal
-              value={renameBox}
-              onChange={setRenameBox}
-              onCancel={() => setIsRenaming(false)}
-            />
-          )}
+            {/* Modals */}
+            <div>
+                {isCreating && (
+                    <NewFolderModal
+                        value={foldername}
+                        onChange={setFoldername}
+                        onConfirm={createFolderOnServer}
+                        onCancel={() => setIsCreating(false)}
+                    />
+                )}
+                {isUploading && (
+                    <UploadModal
+                        onFileSelect={setFile}
+                        onConfirm={() =>
+                            uploadFileToServer(
+                                buildParentIdFromPath(dirPath),
+                                file ? file.name : ""
+                            )
+                        }
+                        onCancel={() => setIsUploading(false)}
+                    />
+                )}
+                {isRenaming && (
+                    <RenameModal
+                        value={renameBox}
+                        onChange={setRenameBox}
+                        onCancel={() => setIsRenaming(false)}
+                    />
+                )}
+                {shareModalOpen && shareItem && (
+                    <ShareModal
+                        item={shareItem}
+                        onClose={handleCloseShareModal}
+                        userRole={
+                            user.userType || user.role || user.accountType
+                        }
+                        onShareUser={handleShareUser}
+                        onUpdateShare={handleUpdateShare}
+                        onRemoveShare={handleRemoveShare}
+                        onEnableLinkShare={handleEnableLinkShare}
+                        onDisableLinkShare={handleDisableLinkShare}
+                        onUpdateLinkPermission={handleUpdateLinkPermission}
+                    />
+                )}
+            </div>
+
+            {/* Messages */}
+            {message && <div className="error-message">{message}</div>}
+
+            <div className="explorer-table-wrapper">
+                {loading && <div className="loading-indicator">Loading...</div>}
+                {noFilesMsg && <div className="no-file-msg">{noFilesMsg}</div>}
+                <table className="explorer-table">
+                    <thead>
+                        <tr>
+                            <th style={{ width: "40px" }}></th>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Actions</th>
+                            <th>Created At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {googleDriveConnected &&
+                            !routesDisplay.startsWith("/Google Drive") && (
+                                <tr key="google-drive">
+                                    <td>
+                                        <span role="img" aria-label="folder">
+                                            📁
+                                        </span>
+                                    </td>
+                                    <td className="file-name">
+                                        <a
+                                            href="#"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                setRoutesDisplay(
+                                                    "/Google Drive"
+                                                );
+                                                listGoogleDriveContent();
+                                            }}
+                                        >
+                                            Google Drive
+                                        </a>
+                                    </td>
+                                    <td>Folder</td>
+                                    <td />
+                                    <td />
+                                </tr>
+                            )}
+                        {dirItems.directories.map((dir) => (
+                            <DirectoryRow
+                                key={dir._id || dir.id}
+                                dir={dir}
+                                onEnterLocal={(name) =>
+                                    setRoutesDisplay((prev) =>
+                                        prev ? prev + `/${name}` : `/${name}`
+                                    )
+                                }
+                                onEnterDrive={(id, name) => {
+                                    setRoutesDisplay((prev) =>
+                                        prev ? prev + `/${name}` : `/${name}`
+                                    );
+                                    fetchGoogleDriveFolder(id);
+                                }}
+                                onToggleRename={toggleRenameBox}
+                                onRename={renameItem}
+                                onDelete={deleteItem}
+                                onShare={handleOpenShareModal}
+                                userRole={
+                                    user.userType ||
+                                    user.role ||
+                                    user.accountType
+                                }
+                            />
+                        ))}
+                        {dirItems.files.map((f) => (
+                            <FileRow
+                                key={f._id || f.id}
+                                file={f}
+                                baseUrl={BASE_URL}
+                                onToggleRename={toggleRenameBox}
+                                onRename={renameItem}
+                                onDelete={deleteItem}
+                                onShare={handleOpenShareModal}
+                                userRole={
+                                    user.userType ||
+                                    user.role ||
+                                    user.accountType
+                                }
+                            />
+                        ))}
+                        <EmptyState
+                            visible={
+                                !loading &&
+                                dirItems.directories.length === 0 &&
+                                dirItems.files.length === 0 &&
+                                !noFilesMsg
+                            }
+                        />
+                    </tbody>
+                </table>
+            </div>
         </div>
-
-        {/* Messages */}
-        {message && <div className="error-message">{message}</div>}
-
-        <div className="explorer-table-wrapper">
-          {loading && <div className="loading-indicator">Loading...</div>}
-          {noFilesMsg && <div className="no-file-msg">{noFilesMsg}</div>}
-          <table className="explorer-table">
-            <thead>
-              <tr>
-                <th style={{ width: "40px" }}></th>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Actions</th>
-                <th>Created At</th>
-              </tr>
-            </thead>
-            <tbody>
-              {googleDriveConnected && !routesDisplay.startsWith("/Google Drive") && (
-                <tr key="google-drive">
-                  <td><span role="img" aria-label="folder">📁</span></td>
-                  <td className="file-name">
-                    <a href="#" onClick={(e) => { e.preventDefault(); setRoutesDisplay("/Google Drive"); listGoogleDriveContent(); }}>
-                      Google Drive
-                    </a>
-                  </td>
-                  <td>Folder</td>
-                  <td />
-                  <td />
-                </tr>
-              )}
-              {dirItems.directories.map(dir => (
-                <DirectoryRow
-                  key={dir._id || dir.id}
-                  dir={dir}
-                  onEnterLocal={(name) => setRoutesDisplay(prev => prev ? prev + `/${name}` : `/${name}`)}
-                  onEnterDrive={(id, name) => { setRoutesDisplay(prev => prev ? prev + `/${name}` : `/${name}`); fetchGoogleDriveFolder(id); }}
-                  onToggleRename={toggleRenameBox}
-                  onRename={renameItem}
-                  onDelete={deleteItem}
-                />
-              ))}
-              {dirItems.files.map(f => (
-                <FileRow
-                  key={f._id || f.id}
-                  file={f}
-                  baseUrl={BASE_URL}
-                  onToggleRename={toggleRenameBox}
-                  onRename={renameItem}
-                  onDelete={deleteItem}
-                />
-              ))}
-              <EmptyState
-                visible={!loading && dirItems.directories.length === 0 && dirItems.files.length === 0 && !noFilesMsg}
-              />
-            </tbody>
-          </table>
-        </div>
-      </div>
     );
 }
 

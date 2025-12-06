@@ -3,24 +3,13 @@ import Session from "../models/sessionModel.js";
 import { Directory } from "../models/directoryModel.js";
 import { canChangeRole } from "../utils/rbac.js";
 
-const userRoleChangeChecker = {
-    owner: ["admin", "manager", "user"],
-    admin: ["admin", "manager", "user"],
-    manager: ["manager", "user"],
-};
-
-const rolePreferences = {
-    owner: 4,
-    admin: 3,
-    manager: 2,
-    user: 1,
-};
-
 export const getUserProfile = (req, res) => {
     res.status(200).json({
         name: req.user.name,
         email: req.user.email,
         connected: req.user.googleDrive?.refresh_token ? true : false,
+        hasPassword: !!req.user.password,
+        role: req.user.role,
     });
 };
 export const getDeletedUsers = async (req, res) => {
@@ -59,6 +48,26 @@ export const getAllUsers = async (req, res) => {
         });
     } catch (error) {
         res.status(500).json({ message: "Failed to fetch users" });
+    }
+};
+
+export const setUserPassword = async (req, res) => {
+    const { password } = req.body;
+    const user = await User.findById(req.user._id);
+    if (!password || password.length < 8) {
+        return res
+            .status(400)
+            .json({ message: "Password must be at least 8 characters long" });
+    }
+    if (user.password) {
+        return res.status(400).json({ message: "Password is already set" });
+    }
+    try {
+        user.password = password;
+        await user.save();
+        return res.status(200).json({ message: "Password set successfully" });
+    } catch (error) {
+        return res.status(500).json({ message: "Failed to set password" });
     }
 };
 

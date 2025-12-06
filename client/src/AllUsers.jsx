@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import "./Users.css";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import DeletePopup from "./components/DeletePopUp";
 import ChangeRoleModal from "./components/ChangeRoleModal";
 
@@ -8,6 +8,7 @@ export default function AllUsers() {
     const BASE_URL = "http://localhost:4000";
     const [users, setUsers] = useState([]);
     const [error, setError] = useState("");
+    const [roleChangeError, setRoleChangeError] = useState("");
     const [userToDelete, setUserToDelete] = useState(null);
     const [showDeletePopup, setShowDeletePopup] = useState(false);
     const [showDeletedUsers, setShowDeletedUsers] = useState(false);
@@ -16,6 +17,7 @@ export default function AllUsers() {
     const [userToChangeRole, setUserToChangeRole] = useState(null);
     const [currentUser, setCurrentUser] = useState({});
     const navigate = useNavigate();
+    const canViewData = currentUser.role === "admin" || currentUser.role === "owner";
 
     const handleLogout = async (userId) => {
         try {
@@ -133,6 +135,7 @@ export default function AllUsers() {
             if (res.ok) {
                 refreshUsersList();
             } else {
+                setRoleChangeError(data.error || "Failed to change user role.");
                 console.log("Failed to change user role:", data.error);
             }
         } catch (err) {
@@ -180,6 +183,7 @@ export default function AllUsers() {
             }
         }
         fetchAllUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
     return (
         <div>
@@ -209,12 +213,15 @@ export default function AllUsers() {
                         setShowRoleModal(false);
                         setUserToChangeRole(null);
                     }}
+                    roleChangeError={roleChangeError}
                 />
             )}
+            <Link to={'/'}>Home</Link>
             {error ? (
                 <p className="error">{error}</p>
             ) : (
                 <div>
+
                     <h2>All Users</h2>
                     <div>
                         <p>{currentUser.name + " (" + currentUser.role + ")"}</p>
@@ -300,6 +307,7 @@ export default function AllUsers() {
                                     <th>Name</th>
                                     <th>Status</th>
                                     <th>Action</th>
+                                    {canViewData && <th>Data</th>}
                                     {(currentUser.role === "admin" ||
                                         currentUser.role === "owner") && (
                                         <th>Admin</th>
@@ -312,6 +320,7 @@ export default function AllUsers() {
                                         _id: id,
                                         name,
                                         isLoggedIn,
+                                        email,
                                         role: userRole,
                                     }) => (
                                         <tr key={id}>
@@ -354,6 +363,30 @@ export default function AllUsers() {
                                                     Logout
                                                 </button>
                                             </td>
+                                            {canViewData && (
+                                                <td
+                                                    className="action"
+                                                    data-label="Data"
+                                                >
+                                                    <button
+                                                        className="role-btn"
+                                                        onClick={() =>
+                                                            navigate(
+                                                                `/admin/users/${id}/data`,
+                                                                {
+                                                                    state: {
+                                                                        userEmail: email,
+                                                                        userName: name,
+                                                                        userRole,
+                                                                    },
+                                                                }
+                                                            )
+                                                        }
+                                                    >
+                                                        View Data
+                                                    </button>
+                                                </td>
+                                            )}
                                             <td
                                                 className="action"
                                                 data-label="Admin"

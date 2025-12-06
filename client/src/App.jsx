@@ -4,7 +4,9 @@ import { DirectoryContextProvider } from "./contexts/DirectoryContexts";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import Register from "./Register";
 import Login from "./Login";
-import AllUsers from "./allUsers";
+import AllUsers from "./AllUsers";
+import AdminUserData from "./AdminUserData";
+import SetPassword from "./SetPassword";
 
 const App = () => {
     const client_id =
@@ -15,8 +17,16 @@ const App = () => {
             element: <Register />,
         },
         {
+            path: "/set-password",
+            element: <SetPassword />,
+        },
+        {
             path: "/users",
             element: <AllUsers />,
+        },
+        {
+            path: "/admin/users/:userId/data/*",
+            element: <AdminUserData />,
         },
         {
             path: "/login",

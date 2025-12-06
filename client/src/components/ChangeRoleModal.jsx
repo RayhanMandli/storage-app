@@ -7,7 +7,8 @@ export default function ChangeRoleModal({
   currentRole,
   onConfirm,
   onCancel,
-  isLoading = false
+  isLoading = false,
+  roleChangeError = null
 }) {
   const [selectedRole, setSelectedRole] = useState(currentRole);
 
@@ -57,6 +58,9 @@ export default function ChangeRoleModal({
               ))}
             </select>
           </div>
+            {roleChangeError && (
+              <p className="change-role-error">{roleChangeError}</p>
+            )}
         </div>
 
         <div className="change-role-actions">

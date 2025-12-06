@@ -4,7 +4,6 @@ import {
     createDirectoryController,
     updateDirectoryController,
 } from "../controllers/directoryController.js";
-import { requireDataPermission } from "../middlewares/accessPermission.js";
 const router = express.Router();
 
 router.get("/{:id}", getDirectoryController);

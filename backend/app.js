@@ -8,6 +8,8 @@ import filesRoutes from "./routes/filesRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
+import shareRoutes from "./routes/shareRoutes.js";
 import integrationRoutes from "./routes/integrationRoutes.js";
 import { authMiddleware } from "./middlewares/auth.js";
 
@@ -33,6 +35,8 @@ app.use("/delete", authMiddleware, deleteRoutes);
 app.use("/files", authMiddleware, filesRoutes);
 app.use("/upload", authMiddleware, uploadRoutes);
 app.use("/user", authMiddleware, userRoutes);
+app.use("/admin", authMiddleware, adminRoutes);
+app.use("/share", authMiddleware, shareRoutes);
 app.use("/auth", authRoutes);
 app.use("/integrations", authMiddleware, integrationRoutes);
 

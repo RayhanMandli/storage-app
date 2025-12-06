@@ -12,23 +12,24 @@ import {
     hardDeleteUserById,
     logoutUserById,
     recoverSoftDeletedUserById,
+    setUserPassword,
     softDeleteUserById,
 } from "../controllers/userController.js";
 
 const router = express.Router();
 
 router.get("/", getUserProfile);
-
+router.post("/set-password", setUserPassword);
 router.get("/all", isAuthority, getAllUsers);
 router.get("/deleted", isOwner, getDeletedUsers);
 
 router.post("/logout/:userId", isAuthority, logoutUserById);
 
-// soft delete user
 router.patch("/delete/:userId", isHigherAuthority, softDeleteUserById);
 router.patch("/recover/:userId", isOwner, recoverSoftDeletedUserById);
+
 router.patch("/change-role/:userId", isAuthority, changeUserRoleById);
 
-// hard delete user
 router.delete("/delete/:userId/hard", isHigherAuthority, hardDeleteUserById);
+
 export default router;

@@ -1,0 +1,335 @@
+/* ShareModal.css - Styling for Share Modal and related components */
+
+.share-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.share-modal-content {
+    background-color: #ffffff;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.share-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid #dadada;
+    position: sticky;
+    top: 0;
+    background: #ffffff;
+    z-index: 1;
+}
+
+.share-modal-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #000000;
+    margin: 0;
+}
+
+.share-modal-close {
+    background: transparent;
+    border: none;
+    font-size: 20px;
+    color: #616161;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 3px;
+}
+
+.share-modal-close:hover {
+    background: #f0f0f0;
+    color: #000000;
+}
+
+.share-modal-error {
+    margin: 12px 20px;
+    padding: 12px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 4px;
+    color: #dc2626;
+    font-size: 13px;
+}
+
+/* Share sections */
+.share-section {
+    padding: 16px 20px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.share-section:last-child {
+    border-bottom: none;
+}
+
+.share-section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #000000;
+    margin: 0 0 12px 0;
+}
+
+/* Share input group */
+.share-input-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.share-input {
+    flex: 1;
+    height: 32px;
+    padding: 0 12px;
+    border: 1px solid #dadada;
+    border-radius: 3px;
+    font-size: 13px;
+    font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+.share-input:focus {
+    outline: none;
+    border-color: #0078d4;
+}
+
+.share-input:disabled {
+    background: #f5f5f5;
+    color: #999999;
+}
+
+.share-select {
+    height: 32px;
+    padding: 0 8px;
+    border: 1px solid #dadada;
+    border-radius: 3px;
+    font-size: 13px;
+    /* background: #ffffff; */
+    /* color: #000000; */
+    cursor: pointer;
+    font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+.share-select:focus {
+    outline: none;
+    border-color: #0078d4;
+}
+
+.share-select:disabled {
+    background: #f5f5f5;
+    color: #999999;
+    cursor: not-allowed;
+}
+
+.share-select-small {
+    height: 28px;
+    padding: 0 6px;
+    border: 1px solid #dadada;
+    border-radius: 3px;
+    font-size: 12px;
+    /* background: #ffffff; */
+    cursor: pointer;
+    font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+.share-select-small:disabled {
+    background: #f5f5f5;
+    color: #999999;
+    cursor: not-allowed;
+}
+
+.share-btn {
+    white-space: nowrap;
+}
+
+/* Shared users list */
+.shared-users-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.shared-user-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: #f9f9f9;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+}
+
+.shared-user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+}
+
+.shared-user-icon {
+    font-size: 16px;
+}
+
+.shared-user-name {
+    font-size: 13px;
+    color: #000000;
+}
+
+.shared-user-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.share-remove-btn {
+    color: #dc2626;
+}
+
+.share-remove-btn:hover {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+/* Link sharing section */
+.link-share-disabled,
+.link-share-enabled {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.link-share-description {
+    font-size: 13px;
+    color: #616161;
+    margin: 0;
+}
+
+.link-share-enable-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.link-share-url-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.share-link-input {
+    flex: 1;
+    height: 32px;
+    padding: 0 12px;
+    border: 1px solid #dadada;
+    border-radius: 3px;
+    font-size: 13px;
+    background: #f9f9f9;
+    color: #000000;
+    font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+.copy-btn {
+    white-space: nowrap;
+    min-width: 80px;
+}
+
+.link-share-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.link-permission-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.link-permission-label {
+    font-size: 13px;
+    color: #616161;
+}
+
+.danger-btn {
+    color: #dc2626;
+}
+
+.danger-btn:hover {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+/* Info message */
+.share-info-message {
+    margin: 12px 20px;
+    padding: 12px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 4px;
+    color: #1e40af;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 767px) {
+    .share-modal-content {
+        width: 95%;
+        max-height: 95vh;
+    }
+
+    .share-input-group {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .share-select,
+    .share-btn {
+        width: 100%;
+    }
+
+    .shared-user-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .shared-user-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .link-share-url-group {
+        flex-direction: column;
+    }
+
+    .copy-btn {
+        width: 100%;
+    }
+
+    .link-share-controls {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .link-permission-group {
+        width: 100%;
+    }
+
+    .danger-btn {
+        width: 100%;
+    }
+}

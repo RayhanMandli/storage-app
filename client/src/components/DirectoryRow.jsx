@@ -9,9 +9,18 @@ export default function DirectoryRow({
   onToggleRename,
   onRename,
   onDelete,
+  onShare,
+  userRole,
+  readOnly = false,
+  linkBuilder,
 }) {
   const isDrive = dir.source && dir.source === "drive";
   const id = dir._id || dir.id;
+  const linkHref = linkBuilder ? linkBuilder(id) : `/directory/${id}`;
+  
+  // Show share button for Owner and Admin roles
+  const canViewShare = userRole === "Owner" || userRole === "Admin";
+
   return (
     <tr key={id}>
       <td><span role="img" aria-label="folder">📁</span></td>
@@ -21,17 +30,20 @@ export default function DirectoryRow({
             {dir.name}
           </a>
         ) : (
-          <Link to={`/directory/${id}`} onClick={() => onEnterLocal(dir.name)}>{dir.name}</Link>
+          <Link to={linkHref} onClick={() => onEnterLocal(dir.name)}>{dir.name}</Link>
         )}
       </td>
       <td>Folder</td>
       <td>
-        {!isDrive && (
+        {!isDrive && !readOnly && (
           <>
             <button className="action-btn" onClick={() => onToggleRename(dir.name)}>Rename</button>
             <button className="action-btn" onClick={() => onRename(dir.name, id, "folder")}>Save</button>
             <button className="action-btn" onClick={() => onDelete(dir.pDir || null, id)}>Delete</button>
           </>
+        )}
+        {!isDrive && canViewShare && onShare && (
+          <button className="action-btn" onClick={() => onShare(dir, "folder")}>Share</button>
         )}
       </td>
       <td>{dir.modified || dir.createdAt || ""}</td>
