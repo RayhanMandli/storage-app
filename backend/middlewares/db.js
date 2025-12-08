@@ -1,8 +1,9 @@
 import mongoose from "mongoose";
+import "dotenv/config";
 
 try {
   await mongoose.connect(
-    "mongodb://admin:admin@localhost/storageApp?authSource=admin"
+    process.env.MONGODB_URI,
   );
   console.log("Connected to MongoDB");
 } catch (err) {

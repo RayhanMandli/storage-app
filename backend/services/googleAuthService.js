@@ -1,7 +1,8 @@
 import {OAuth2Client} from "google-auth-library"
-const clientId =
-    "520971006621-jur4rdm3hnpfgi5mfrbm3s2ort7p50so.apps.googleusercontent.com";
-const clientSecret = "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";
+import "dotenv/config";
+
+const clientId = process.env.GOOGLE_CLIENT_ID;
+const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
 const client = new OAuth2Client({client_id: clientId, client_secret: clientSecret});
 

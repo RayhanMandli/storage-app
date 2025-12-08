@@ -1,4 +1,5 @@
 import "./middlewares/db.js";
+import "./middlewares/redis.js";
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -12,13 +13,14 @@ import adminRoutes from "./routes/adminRoutes.js";
 import shareRoutes from "./routes/shareRoutes.js";
 import integrationRoutes from "./routes/integrationRoutes.js";
 import { authMiddleware } from "./middlewares/auth.js";
+import "dotenv/config";
 
-const secret = "my-secret-key";
+const secret = process.env.COOKIE_SECRET;
 const app = express();
 app.use(
     cors({
         credentials: true,
-        origin: "http://localhost:5173",
+        origin: process.env.CLIENT_URL,
     })
 );
 app.use(cookieParser(secret));
@@ -47,6 +49,7 @@ app.use((err, req, res, next) => {
 });
 
 //Starting the server
-app.listen(4000, () => {
-    console.log("Server is running on port 4000");
+const PORT = process.env.PORT || 4000;
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });

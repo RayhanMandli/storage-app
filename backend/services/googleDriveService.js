@@ -1,10 +1,10 @@
 import qs from "querystring";
 import { User } from "../models/userModel.js";
+import "dotenv/config";
 
-const client_id =
-    "520971006621-jur4rdm3hnpfgi5mfrbm3s2ort7p50so.apps.googleusercontent.com";
-const redirect_uri = "http://localhost:4000/integrations/google-drive/callback";
-const client_secret = "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";
+const client_id = process.env.GOOGLE_CLIENT_ID;
+const redirect_uri = process.env.GOOGLE_REDIRECT_URI;
+const client_secret = process.env.GOOGLE_CLIENT_SECRET;
 
 export async function refreshGoogleDriveToken(user) {
     const res = await fetch("https://oauth2.googleapis.com/token", {

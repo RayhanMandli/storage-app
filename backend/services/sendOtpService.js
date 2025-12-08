@@ -1,6 +1,8 @@
 import { Resend } from "resend";
 import { Otp } from "../models/otpModel.js";
-const resend = new Resend("re_Y8rHQz1i_AmFLoySgHyqrdmd53hXf7MyX");
+import "dotenv/config";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 export const otpHandler = async (email) => {
     const otp = Math.floor(1000 + Math.random() * 9000);
     try {

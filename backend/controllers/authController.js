@@ -10,33 +10,44 @@ import {
     getGithubUserData,
     getGithubUserEmail,
 } from "../services/githubAuthService.js";
+import mongoose from "mongoose";
+import redisClient from "../middlewares/redis.js";
 
 export const userRegister = async (req, res) => {
     const { name, email, password } = req.body;
+    const session = await mongoose.startSession();
 
     // Log registration attempt
     logAuth("register_attempt", null, email);
 
     try {
+        session.startTransaction();
         // Create root directory for the new user
-        const newRootDir = await Directory({
-            name: `root-${email}`,
-        });
+        const newRootDir = await Directory(
+            {
+                name: `root-${email}`,
+            },
+            { session }
+        );
         const rootDirId = newRootDir._id;
 
         // Create new user with hashed password
-        const newUser = await User({
-            rootDirId,
-            name,
-            email,
-            password,
-        });
+        const newUser = await User(
+            {
+                rootDirId,
+                name,
+                email,
+                password,
+            },
+            { session }
+        );
         await newUser.save();
 
         // Link root directory to user
         newRootDir.userId = newUser._id;
         await newRootDir.save();
-
+        await session.commitTransaction();
+        await session.endSession();
         // Log successful registration
         logAuth("register", newUser._id, email, true);
 
@@ -47,7 +58,8 @@ export const userRegister = async (req, res) => {
             logAuth("register", null, email, false, error);
             return res.status(400).json({ error: "Email already exists" });
         }
-
+        await session.abortTransaction();
+        await session.endSession();
         // Log unexpected error during registration
         logError("User registration failed", error, { email, name });
         res.status(500).json({ error: "Internal server error" });
@@ -82,24 +94,49 @@ export const userLogin = async (req, res) => {
 
     try {
         // Session management: Restrict to two devices/sessions
-        const sessionCount = await Session.countDocuments({ userId: user._id });
+        const { total: sessionCount } = await redisClient.ft.search(
+            "userIdx",
+            `@user:{${user._id.toString()}}`,
+            {
+                LIMIT: {
+                    from: 0,
+                    size: 0,
+                },
+            }
+        );
         if (sessionCount >= 2) {
             // Delete oldest session to maintain limit
-            const oldestSession = await Session.findOne({
-                userId: user._id,
-            }).sort({
-                createdAt: 1,
-            });
-            await Session.deleteOne({ _id: oldestSession._id });
+            const sessions = await redisClient.ft.search(
+                "userIdx",
+                `@user:{${user._id.toString()}}`,
+                {
+                    SORTBY: {
+                        BY: "createdAt",
+                        DIRECTION: "ASC",
+                    },
+                    LIMIT: {
+                        from: 0,
+                        size: 1,
+                    },
+                }
+            );
+            const oldestSessionId = sessions.documents[0].id.split(":")[1];
+            await redisClient.del(`session:${oldestSessionId}`);
 
             logAuth("session_cleanup", user._id, email, true, null);
         }
 
         // Create new session
-        const session = await Session.create({ userId: user._id });
-
+        // const session = await Session.create({ userId: user._id });
+        // session using redis
+        const sessionId = crypto.randomUUID();
+        await redisClient.json.set(`session:${sessionId}`, "$", {
+            userId: user._id.toString(),
+            createdAt: Date.now(),
+        });
+        await redisClient.expire(`session:${sessionId}`, 24 * 60 * 60); // 24 hours
         // Set secure cookie with session ID
-        res.cookie("sid", session.id, {
+        res.cookie("sid", sessionId, {
             maxAge: 24 * 60 * 60 * 1000, // 24 hours
             signed: true,
             httpOnly: true,
@@ -126,11 +163,10 @@ export const userLogout = async (req, res) => {
 
     try {
         // Find session before deletion for logging
-        const session = await Session.findById(sessionId);
+        // const session = await Session.findById(sessionId);
 
-        if (session) {
-            await Session.findByIdAndDelete(sessionId);
-
+        if (sessionId) {
+            const session = await redisClient.del(sessionId);
             // Log successful logout
             logAuth("logout", session.userId, null, true);
         } else {
@@ -212,11 +248,9 @@ export const handleGoogleLogin = async (req, res) => {
 
     const user = await User.findOne({ email });
     if (user && user.isDeleted) {
-        return res
-            .status(403)
-            .json({
-                error: "Account is deleted. Contact owner of this app to recover your account.",
-            });
+        return res.status(403).json({
+            error: "Account is deleted. Contact owner of this app to recover your account.",
+        });
     }
     if (!user) {
         // Create root directory for the new user
@@ -242,15 +276,19 @@ export const handleGoogleLogin = async (req, res) => {
         logAuth("login with google", newUser._id, email, true);
 
         // Create new session
-        const session = await Session.create({ userId: newUser._id });
-
+        const sessionId = crypto.randomUUID();
+        await redisClient.json.set(`session:${sessionId}`, "$", {
+            userId: newUser._id.toString(),
+            createdAt: Date.now(),
+        });
+        await redisClient.expire(`session:${sessionId}`, 24 * 60 * 60); // 24 hours
         // Set secure cookie with session ID
-        res.cookie("sid", session.id, {
+        res.cookie("sid", sessionId, {
             maxAge: 24 * 60 * 60 * 1000, // 24 hours
             signed: true,
             httpOnly: true,
-            secure: true,
             sameSite: "none",
+            secure: true,
         });
 
         return res.status(201).json({ message: "User logged in with google" });
@@ -259,25 +297,50 @@ export const handleGoogleLogin = async (req, res) => {
         if (user.googleId !== googleId) {
             return res.status(400).json({ error: "Google ID mismatch" });
         } else {
-            const sessionCount = await Session.countDocuments({
-                userId: user._id,
-            });
+            // Session management: Restrict to two devices/sessions
+            const { total: sessionCount } = await redisClient.ft.search(
+                "userIdx",
+                `@user:{${user._id.toString()}}`,
+                {
+                    LIMIT: {
+                        from: 0,
+                        size: 0,
+                    },
+                }
+            );
             if (sessionCount >= 2) {
                 // Delete oldest session to maintain limit
-                const oldestSession = await Session.findOne({
-                    userId: user._id,
-                }).sort({
-                    createdAt: 1,
-                });
-                await Session.deleteOne({ _id: oldestSession._id });
+                const sessions = await redisClient.ft.search(
+                    "userIdx",
+                    `@user:{${user._id.toString()}}`,
+                    {
+                        SORTBY: {
+                            BY: "createdAt",
+                            DIRECTION: "ASC",
+                        },
+                        LIMIT: {
+                            from: 0,
+                            size: 1,
+                        },
+                    }
+                );
+                const oldestSessionId = sessions.documents[0].id.split(":")[1];
+                await redisClient.del(`session:${oldestSessionId}`);
 
                 logAuth("session_cleanup", user._id, email, true, null);
             }
-            // Create new session
-            const session = await Session.create({ userId: user._id });
 
+            // Create new session
+            // const session = await Session.create({ userId: user._id });
+            // session using redis
+            const sessionId = crypto.randomUUID();
+            await redisClient.json.set(`session:${sessionId}`, "$", {
+                userId: user._id.toString(),
+                createdAt: Date.now(),
+            });
+            await redisClient.expire(`session:${sessionId}`, 24 * 60 * 60); // 24 hours
             // Set secure cookie with session ID
-            res.cookie("sid", session.id, {
+            res.cookie("sid", sessionId, {
                 maxAge: 24 * 60 * 60 * 1000, // 24 hours
                 signed: true,
                 httpOnly: true,
@@ -291,32 +354,57 @@ export const handleGoogleLogin = async (req, res) => {
         user.googleId = googleId;
         await user.save();
 
-        const sessionCount = await Session.countDocuments({
-            userId: user._id,
-        });
+        // Session management: Restrict to two devices/sessions
+        const { total: sessionCount } = await redisClient.ft.search(
+            "userIdx",
+            `@user:{${user._id.toString()}}`,
+            {
+                LIMIT: {
+                    from: 0,
+                    size: 0,
+                },
+            }
+        );
         if (sessionCount >= 2) {
             // Delete oldest session to maintain limit
-            const oldestSession = await Session.findOne({
-                userId: user._id,
-            }).sort({
-                createdAt: 1,
-            });
-            await Session.deleteOne({ _id: oldestSession._id });
+            const sessions = await redisClient.ft.search(
+                "userIdx",
+                `@user:{${user._id.toString()}}`,
+                {
+                    SORTBY: {
+                        BY: "createdAt",
+                        DIRECTION: "ASC",
+                    },
+                    LIMIT: {
+                        from: 0,
+                        size: 1,
+                    },
+                }
+            );
+            const oldestSessionId = sessions.documents[0].id.split(":")[1];
+            await redisClient.del(`session:${oldestSessionId}`);
 
             logAuth("session_cleanup", user._id, email, true, null);
         }
-        // Create new session
-        const session = await Session.create({ userId: user._id });
 
+        // Create new session
+        // const session = await Session.create({ userId: user._id });
+        // session using redis
+        const sessionId = crypto.randomUUID();
+        await redisClient.json.set(`session:${sessionId}`, "$", {
+            userId: user._id.toString(),
+            createdAt: Date.now(),
+        });
+        await redisClient.expire(`session:${sessionId}`, 24 * 60 * 60); // 24 hours
         // Set secure cookie with session ID
-        res.cookie("sid", session.id, {
+        res.cookie("sid", sessionId, {
             maxAge: 24 * 60 * 60 * 1000, // 24 hours
             signed: true,
             httpOnly: true,
             sameSite: "none",
             secure: true,
         });
-        res.status(201).json({ message: "User logged in with google" });
+        return res.status(201).json({ message: "User logged in with google" });
     }
 };
 export const handleGithubLogin = async (req, res) => {
@@ -364,15 +452,21 @@ export const handleGithubLogin = async (req, res) => {
         logAuth("login with github", newUser._id, email, true);
 
         // Create new session
-        const session = await Session.create({ userId: newUser._id });
 
+        // session using redis
+        const sessionId = crypto.randomUUID();
+        await redisClient.json.set(`session:${sessionId}`, "$", {
+            userId: newUser._id.toString(),
+            createdAt: Date.now(),
+        });
+        await redisClient.expire(`session:${sessionId}`, 24 * 60 * 60); // 24 hours
         // Set secure cookie with session ID
-        res.cookie("sid", session.id, {
+        res.cookie("sid", sessionId, {
             maxAge: 24 * 60 * 60 * 1000, // 24 hours
             signed: true,
             httpOnly: true,
-            secure: true,
             sameSite: "none",
+            secure: true,
         });
 
         return res.redirect("http://localhost:5173");
@@ -381,25 +475,50 @@ export const handleGithubLogin = async (req, res) => {
         if (user.githubId !== "" + githubId) {
             return res.status(400).json({ error: "GitHub ID mismatch" });
         } else {
-            const sessionCount = await Session.countDocuments({
-                userId: user._id,
-            });
+            // Session management: Restrict to two devices/sessions
+            const { total: sessionCount } = await redisClient.ft.search(
+                "userIdx",
+                `@user:{${user._id.toString()}}`,
+                {
+                    LIMIT: {
+                        from: 0,
+                        size: 0,
+                    },
+                }
+            );
             if (sessionCount >= 2) {
                 // Delete oldest session to maintain limit
-                const oldestSession = await Session.findOne({
-                    userId: user._id,
-                }).sort({
-                    createdAt: 1,
-                });
-                await Session.deleteOne({ _id: oldestSession._id });
+                const sessions = await redisClient.ft.search(
+                    "userIdx",
+                    `@user:{${user._id.toString()}}`,
+                    {
+                        SORTBY: {
+                            BY: "createdAt",
+                            DIRECTION: "ASC",
+                        },
+                        LIMIT: {
+                            from: 0,
+                            size: 1,
+                        },
+                    }
+                );
+                const oldestSessionId = sessions.documents[0].id.split(":")[1];
+                await redisClient.del(`session:${oldestSessionId}`);
 
                 logAuth("session_cleanup", user._id, email, true, null);
             }
-            // Create new session
-            const session = await Session.create({ userId: user._id });
 
+            // Create new session
+            // const session = await Session.create({ userId: user._id });
+            // session using redis
+            const sessionId = crypto.randomUUID();
+            await redisClient.json.set(`session:${sessionId}`, "$", {
+                userId: user._id.toString(),
+                createdAt: Date.now(),
+            });
+            await redisClient.expire(`session:${sessionId}`, 24 * 60 * 60); // 24 hours
             // Set secure cookie with session ID
-            res.cookie("sid", session.id, {
+            res.cookie("sid", sessionId, {
                 maxAge: 24 * 60 * 60 * 1000, // 24 hours
                 signed: true,
                 httpOnly: true,
@@ -413,25 +532,50 @@ export const handleGithubLogin = async (req, res) => {
         user.githubId = githubId;
         await user.save();
 
-        const sessionCount = await Session.countDocuments({
-            userId: user._id,
-        });
+        // Session management: Restrict to two devices/sessions
+        const { total: sessionCount } = await redisClient.ft.search(
+            "userIdx",
+            `@user:{${user._id.toString()}}`,
+            {
+                LIMIT: {
+                    from: 0,
+                    size: 0,
+                },
+            }
+        );
         if (sessionCount >= 2) {
             // Delete oldest session to maintain limit
-            const oldestSession = await Session.findOne({
-                userId: user._id,
-            }).sort({
-                createdAt: 1,
-            });
-            await Session.deleteOne({ _id: oldestSession._id });
+            const sessions = await redisClient.ft.search(
+                "userIdx",
+                `@user:{${user._id.toString()}}`,
+                {
+                    SORTBY: {
+                        BY: "createdAt",
+                        DIRECTION: "ASC",
+                    },
+                    LIMIT: {
+                        from: 0,
+                        size: 1,
+                    },
+                }
+            );
+            const oldestSessionId = sessions.documents[0].id.split(":")[1];
+            await redisClient.del(`session:${oldestSessionId}`);
 
             logAuth("session_cleanup", user._id, email, true, null);
         }
-        // Create new session
-        const session = await Session.create({ userId: user._id });
 
+        // Create new session
+        // const session = await Session.create({ userId: user._id });
+        // session using redis
+        const sessionId = crypto.randomUUID();
+        await redisClient.json.set(`session:${sessionId}`, "$", {
+            userId: user._id.toString(),
+            createdAt: Date.now(),
+        });
+        await redisClient.expire(`session:${sessionId}`, 24 * 60 * 60); // 24 hours
         // Set secure cookie with session ID
-        res.cookie("sid", session.id, {
+        res.cookie("sid", sessionId, {
             maxAge: 24 * 60 * 60 * 1000, // 24 hours
             signed: true,
             httpOnly: true,

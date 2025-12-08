@@ -1,5 +1,7 @@
-const client_id = "Ov23li5iOPKgLejYkQuQ";
-const client_secret = "1af574152232a1ed0149a0130dcb1af0cabe7d82";
+import "dotenv/config";
+
+const client_id = process.env.GITHUB_CLIENT_ID;
+const client_secret = process.env.GITHUB_CLIENT_SECRET;
 export const getAccessTokenFromCode = async (code) => {
     try {
         const tokenRes = await fetch(
