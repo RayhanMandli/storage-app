@@ -12,9 +12,19 @@ import {
 } from "../services/githubAuthService.js";
 import mongoose from "mongoose";
 import redisClient from "../middlewares/redis.js";
+import {
+    loginSchema,
+    registerSchema,
+    sendOtpSchema,
+    verifyOtpSchema,
+} from "../validators/zodValidation.js";
 
 export const userRegister = async (req, res) => {
-    const { name, email, password } = req.body;
+    const { success, data, error } = registerSchema.safeParse(req.body);
+    if (!success) {
+        return res.status(400).json({ error: "Invalid request data", error });
+    }
+    const { name, email, password } = data;
     const session = await mongoose.startSession();
 
     // Log registration attempt
@@ -67,7 +77,11 @@ export const userRegister = async (req, res) => {
 };
 
 export const userLogin = async (req, res) => {
-    const { email, password } = req.body;
+    const { success, data, error } = loginSchema.safeParse(req.body);
+    if (!success) {
+        return res.status(400).json({ error: "Invalid request data", error });
+    }
+    const { email, password } = data;
 
     // Log login attempt
     logAuth("login_attempt", null, email);
@@ -211,7 +225,11 @@ export const userLogoutAll = async (req, res) => {
 };
 
 export const sendOtp = async (req, res) => {
-    const { email } = req.body;
+    const { success, data, error } = sendOtpSchema.safeParse(req.body);
+    if (!success) {
+        return res.status(400).json({ error: "Invalid request data", error });
+    }
+    const { email } = data;
     const result = await otpHandler(email);
     if (result.success) {
         res.json({ message: "OTP sent successfully" });
@@ -221,7 +239,11 @@ export const sendOtp = async (req, res) => {
 };
 
 export const verifyOtp = async (req, res) => {
-    const { email, otp } = req.body;
+    const { success, data, error } = verifyOtpSchema.safeParse(req.body);
+    if (!success) {
+        return res.status(400).json({ error: "Invalid request data", error });
+    }
+    const { email, otp } = data;
     try {
         const record = await Otp.findOne({ email, otp });
         if (!record) {

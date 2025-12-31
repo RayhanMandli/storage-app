@@ -12,11 +12,7 @@ export const otpHandler = async (email) => {
             subject: "OTP for Verification - Valid for 5 minutes",
             html: `<p>Your OTP for verification is: <strong>${otp}</strong></p><p>This OTP is valid for 5 minutes.</p>`,
         });
-        await Otp.findOneAndUpdate(
-            { email },
-            { otp },
-            { upsert: true, new: true }
-        );
+        await Otp.findOneAndUpdate({ email }, { otp }, { upsert: true });
         return {
             success: true,
             otp,

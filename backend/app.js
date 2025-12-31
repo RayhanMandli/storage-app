@@ -25,13 +25,6 @@ app.use(
 );
 app.use(cookieParser(secret));
 app.use(express.json());
-
-// app.use(async (req, res, next) => {
-//   const client = await connectDB();
-//   const db = client.db("storageApp");
-//   req.db = db;
-//   next();
-// });
 app.use("/directory", authMiddleware, directoryRoutes);
 app.use("/delete", authMiddleware, deleteRoutes);
 app.use("/files", authMiddleware, filesRoutes);
