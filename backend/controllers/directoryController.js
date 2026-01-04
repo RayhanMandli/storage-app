@@ -3,6 +3,7 @@ import { File } from "../models/fileModel.js";
 import { ObjectId } from "mongodb";
 import { canAccessUserData } from "../utils/rbac.js";
 import { User } from "../models/userModel.js";
+import domPurifier from "../utils/dompurifier.js";
 
 export const getDirectoryController = async (req, res) => {
     const requesterId = req.user._id;
@@ -58,17 +59,13 @@ export const getDirectoryController = async (req, res) => {
 export const createDirectoryController = async (req, res) => {
     const userId = req.user._id;
     const userRootDirId = req.user.rootDirId;
-    // console.log(userRootDirId);
     let parentDirId = req.headers.parentdirid;
 
     if (parentDirId !== "root") parentDirId = new ObjectId(parentDirId);
     else parentDirId = userRootDirId;
-    // console.log(parentDirId);
-    const { dirname } = req.params;
-
+    const { dirname } = domPurifier(req.params);
     try {
         const parentDir = await Directory.findById(parentDirId);
-        // console.log(parentDir);
         if (!parentDir)
             return res
                 .status(400)
@@ -94,7 +91,7 @@ export const createDirectoryController = async (req, res) => {
 
 export const updateDirectoryController = async (req, res) => {
     const { _id: userId } = req.user;
-    const { newName } = req.body || "New Folder";
+    const { newName } = domPurifier(req.body) || "New Folder";
     const { id } = req.params;
 
     try {

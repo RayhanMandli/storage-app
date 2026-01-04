@@ -18,9 +18,11 @@ import {
     sendOtpSchema,
     verifyOtpSchema,
 } from "../validators/zodValidation.js";
+import domPurifier from "../utils/dompurifier.js";
 
 export const userRegister = async (req, res) => {
-    const { success, data, error } = registerSchema.safeParse(req.body);
+    const cleanData = domPurifier(req.body);
+    const { success, data, error } = registerSchema.safeParse(cleanData);
     if (!success) {
         return res.status(400).json({ error: "Invalid request data", error });
     }
@@ -77,7 +79,8 @@ export const userRegister = async (req, res) => {
 };
 
 export const userLogin = async (req, res) => {
-    const { success, data, error } = loginSchema.safeParse(req.body);
+    const cleanData = domPurifier(req.body);
+    const { success, data, error } = loginSchema.safeParse(cleanData);
     if (!success) {
         return res.status(400).json({ error: "Invalid request data", error });
     }
@@ -140,8 +143,6 @@ export const userLogin = async (req, res) => {
             logAuth("session_cleanup", user._id, email, true, null);
         }
 
-        // Create new session
-        // const session = await Session.create({ userId: user._id });
         // session using redis
         const sessionId = crypto.randomUUID();
         await redisClient.json.set(`session:${sessionId}`, "$", {
@@ -154,7 +155,7 @@ export const userLogin = async (req, res) => {
             maxAge: 24 * 60 * 60 * 1000, // 24 hours
             signed: true,
             httpOnly: true,
-            sameSite: "none",
+            sameSite: "lax",
             secure: true,
         });
 
@@ -225,7 +226,8 @@ export const userLogoutAll = async (req, res) => {
 };
 
 export const sendOtp = async (req, res) => {
-    const { success, data, error } = sendOtpSchema.safeParse(req.body);
+    const cleanData = domPurifier(req.body);
+    const { success, data, error } = sendOtpSchema.safeParse(cleanData);
     if (!success) {
         return res.status(400).json({ error: "Invalid request data", error });
     }
@@ -239,7 +241,8 @@ export const sendOtp = async (req, res) => {
 };
 
 export const verifyOtp = async (req, res) => {
-    const { success, data, error } = verifyOtpSchema.safeParse(req.body);
+    const cleanData = domPurifier(req.body);
+    const { success, data, error } = verifyOtpSchema.safeParse(cleanData);
     if (!success) {
         return res.status(400).json({ error: "Invalid request data", error });
     }
@@ -309,7 +312,7 @@ export const handleGoogleLogin = async (req, res) => {
             maxAge: 24 * 60 * 60 * 1000, // 24 hours
             signed: true,
             httpOnly: true,
-            sameSite: "none",
+            sameSite: "lax",
             secure: true,
         });
 
@@ -366,7 +369,7 @@ export const handleGoogleLogin = async (req, res) => {
                 maxAge: 24 * 60 * 60 * 1000, // 24 hours
                 signed: true,
                 httpOnly: true,
-                sameSite: "none",
+                sameSite: "lax",
                 secure: true,
             });
 
@@ -423,7 +426,7 @@ export const handleGoogleLogin = async (req, res) => {
             maxAge: 24 * 60 * 60 * 1000, // 24 hours
             signed: true,
             httpOnly: true,
-            sameSite: "none",
+            sameSite: "lax",
             secure: true,
         });
         return res.status(201).json({ message: "User logged in with google" });
@@ -487,7 +490,7 @@ export const handleGithubLogin = async (req, res) => {
             maxAge: 24 * 60 * 60 * 1000, // 24 hours
             signed: true,
             httpOnly: true,
-            sameSite: "none",
+            sameSite: "lax",
             secure: true,
         });
 
@@ -544,7 +547,7 @@ export const handleGithubLogin = async (req, res) => {
                 maxAge: 24 * 60 * 60 * 1000, // 24 hours
                 signed: true,
                 httpOnly: true,
-                sameSite: "none",
+                sameSite: "lax",
                 secure: true,
             });
 
@@ -601,7 +604,7 @@ export const handleGithubLogin = async (req, res) => {
             maxAge: 24 * 60 * 60 * 1000, // 24 hours
             signed: true,
             httpOnly: true,
-            sameSite: "none",
+            sameSite: "lax",
             secure: true,
         });
 

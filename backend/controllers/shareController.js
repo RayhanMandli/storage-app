@@ -1,9 +1,16 @@
 import { File } from "../models/fileModel.js";
 import { User } from "../models/userModel.js";
+import domPurifier from "../utils/dompurifier.js";
+import { fileAccessSchema } from "../validators/zodValidation.js";
 
 export const shareFileAccess = async (req, res) => {
     const fileId = req.params.fileId;
-    const { email, permission } = req.body;
+    const cleanData = domPurifier(req.body);
+    const {success, data, error}= fileAccessSchema.safeParse(cleanData);
+    if(!success){
+        return res.status(400).json({message: "Invalid request data", error});
+    }
+    const { email, permission } = data;
     try {
         const file = await File.findById(fileId);
         const userToShare = await User.findOne({ email });

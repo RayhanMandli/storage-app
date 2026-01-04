@@ -47,6 +47,7 @@ const deleteDirectory = async (id, next) => {
     next(e);
   }
 };
+
 const deleteFile = async (id, next) => {
   const file = await File.findById(id);
   const { extension } = file;

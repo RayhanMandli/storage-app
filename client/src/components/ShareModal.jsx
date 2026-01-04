@@ -35,9 +35,8 @@ export default function ShareModal({
 
     const isOwner = userRole === "owner";
     const isAdmin = userRole === "admin";
-    const isUser = userRole === "user";
     const canEdit = isOwner; // Only Owner can edit shares
-    const canView = isOwner || isAdmin || isUser; // Owner, Admin, and User can view shares
+    const canView = true; // Owner, Admin, and User can view shares
 
     const handleShare = async () => {
         if (!email.trim()) {

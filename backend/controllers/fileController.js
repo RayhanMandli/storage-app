@@ -8,6 +8,7 @@ import {
     logSecurity,
     logInfo,
 } from "../utils/logger.js";
+import domPurifier from "../utils/dompurifier.js";
 
 export const uploadFileController = async (req, res, next) => {
     let parentDirId = req.headers["parentdirid"];
@@ -16,7 +17,7 @@ export const uploadFileController = async (req, res, next) => {
     } else {
         parentDirId = req.user.rootDirId;
     }
-    let { filename } = req.params;
+    let { filename } = domPurifier(req.params);
     const extension = path.extname(filename);
 
     // Log file upload attempt
@@ -196,8 +197,7 @@ export const serveFileController = async (req, res, next) => {
 
 export const renameFileController = async (req, res, next) => {
     const { id } = req.params;
-    let { newName } = req.body;
-
+    let { newName } = domPurifier(req.body)
     // Validate inputs
     if (!ObjectId.isValid(id)) {
         logSecurity("FILE_RENAME_INVALID_ID", {
