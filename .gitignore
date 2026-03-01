@@ -7,6 +7,10 @@ node_modules/
 # Environment files
 .env
 
+#Uploads
+storage/
+storage copy/
+
 # Build/Dist output
 dist/
 build/
