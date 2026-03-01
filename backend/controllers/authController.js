@@ -42,7 +42,7 @@ export const userRegister = async (req, res) => {
             { session }
         );
         const rootDirId = newRootDir._id;
-
+        newRootDir.path.push(newRootDir._id);
         // Create new user with hashed password
         const newUser = await User(
             {

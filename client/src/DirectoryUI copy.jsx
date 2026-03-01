@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import "./App.css";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { DirectoryContext } from "./contexts/DirectoryContexts";
 import { useContext } from "react";
@@ -22,7 +21,6 @@ function DirectoryUI() {
     const [loggedIn, setLoggedIn] = useState(false);
 
     let { "*": dirPath } = useParams();
-    console.log(dirPath);
     const navigate = useNavigate();
     //utility functions
     const toggleRenameBox = (oldname) => {
@@ -30,7 +28,6 @@ function DirectoryUI() {
         setRenameBox(oldname);
     };
     const handleFileChange = (e) => {
-        console.log(e.target.files);
         setFile(e.target.files[0]);
     };
 
@@ -51,7 +48,6 @@ function DirectoryUI() {
         );
         const data = await res.json();
         setMessage(data.message);
-        console.log("data: ", data);
         fetchData();
     };
     const handleRename = async (oldname, Id, type) => {
@@ -69,7 +65,6 @@ function DirectoryUI() {
             }
         );
         const data = await res.json();
-        console.log("data: ", data);
         setIsRenaming(false);
         setRenameBox("");
         fetchData();
@@ -151,7 +146,6 @@ function DirectoryUI() {
         if (data.files.length === 0 && data.directories.length === 0) {
             setNoFilesMsg("No Files");
         }
-        console.log("data: ", data);
         setDirItems(data);
     };
     const handleLogout = async () => {
@@ -181,7 +175,6 @@ function DirectoryUI() {
             });
             const data = await response.json();
             if (response.ok) {
-                console.log(data.message);
                 setLoggedIn(false);
                 setUser({});
                 navigate("/login");
@@ -216,7 +209,6 @@ function DirectoryUI() {
             }
         );
         const data = await response.json();
-        console.log(data);
         setDirItems(data);
     };
 

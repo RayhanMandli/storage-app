@@ -21,7 +21,6 @@ export async function refreshGoogleDriveToken(user) {
     });
 
     const data = await res.json();
-
     if (data.access_token) {
         await User.updateOne(
             { _id: user._id },

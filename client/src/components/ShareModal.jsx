@@ -1,5 +1,4 @@
 import { useState } from "react";
-import "./ShareModal.css";
 import SharedUserRow from "./SharedUserRow";
 import LinkShareSection from "./LinkShareSection";
 
@@ -83,32 +82,35 @@ export default function ShareModal({
     const sharedUsers = Array.isArray(item.sharedWith) ? item.sharedWith : [];
 
     return (
-        <div className="share-modal-overlay" onClick={onClose}>
-            <div className="share-modal-content" onClick={(e) => e.stopPropagation()}>
-                <div className="share-modal-header">
-                    <h2 className="share-modal-title">Share "{item.filename}"</h2>
-                    <button className="share-modal-close" onClick={onClose}>
+        <div className="fixed inset-0 z-[1000] bg-black/60 flex items-center justify-center" onClick={onClose}>
+            <div className="w-[90%] max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl bg-zinc-950 shadow-2xl shadow-black/50 outline-2 outline-cyan-600 outline-offset-2 outline-solid" onClick={(e) => e.stopPropagation()}>
+                <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-800 bg-zinc-950 px-5 py-4">
+                    <h2 className="text-lg font-semibold text-zinc-100">Share "{item.filename}"</h2>
+                    <button className="h-9 w-9 rounded-full hover:bg-zinc-800 text-xl text-zinc-400 hover:text-zinc-200 transition-colors" onClick={onClose}>
                         ✕
                     </button>
                 </div>
 
-                {error && <div className="share-modal-error">{error}</div>}
+                {error && (
+                    <div className="mx-5 mt-3 rounded border border-red-900/50 bg-red-950/30 px-3 py-2 text-sm text-red-400">
+                        {error}
+                    </div>
+                )}
 
-                {/* Share with user section */}
-                {(
-                    <div className="share-section">
-                        <h3 className="share-section-title">Share with people</h3>
-                        <div className="share-input-group">
+                <div className="divide-y divide-zinc-800">
+                    <div className="px-5 py-4 space-y-3">
+                        <h3 className="text-sm font-semibold text-zinc-200">Share with people</h3>
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                             <input
                                 type="email"
-                                className="share-input"
+                                className="flex-1 rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-colors"
                                 placeholder="Enter email address"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 disabled={isProcessing}
                             />
                             <select
-                                className="share-select"
+                                className="h-10 rounded border border-zinc-700 bg-zinc-900 px-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-colors"
                                 value={permission}
                                 onChange={(e) => setPermission(e.target.value)}
                                 disabled={isProcessing}
@@ -117,7 +119,7 @@ export default function ShareModal({
                                 <option value="editor">Editor</option>
                             </select>
                             <button
-                                className="toolbar-btn share-btn"
+                                className="h-10 px-4 rounded bg-cyan-600 text-white text-sm font-semibold hover:bg-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 onClick={handleShare}
                                 disabled={isProcessing}
                             >
@@ -125,46 +127,43 @@ export default function ShareModal({
                             </button>
                         </div>
                     </div>
-                )}
 
-                {/* Existing shared users */}
-                {canView && sharedUsers.length > 0 && (
-                    <div className="share-section">
-                        <h3 className="share-section-title">People with access</h3>
-                        <div className="shared-users-list">
-                            {sharedUsers.map(({userId:user}) => (
-                                <SharedUserRow
-                                    key={user._id || user.userId}
-                                    user={user}
-                                    canEdit={canEdit}
-                                    onUpdatePermission={handleUpdateShare}
-                                    onRemove={handleRemoveShare}
-                                    isProcessing={isProcessing}
-                                />
-                            ))}
+                    {canView && sharedUsers.length > 0 && (
+                        <div className="px-5 py-4 space-y-3">
+                            <h3 className="text-sm font-semibold text-zinc-200">People with access</h3>
+                            <div className="flex flex-col gap-2">
+                                {sharedUsers.map(({userId:user}) => (
+                                    <SharedUserRow
+                                        key={user._id || user.userId}
+                                        user={user}
+                                        canEdit={canEdit}
+                                        onUpdatePermission={handleUpdateShare}
+                                        onRemove={handleRemoveShare}
+                                        isProcessing={isProcessing}
+                                    />
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
 
-                {/* Link sharing section */}
-                {canView && (
-                    <LinkShareSection
-                        linkShare={item.linkShare}
-                        canEdit={canEdit}
-                        onEnableLinkShare={onEnableLinkShare}
-                        onDisableLinkShare={onDisableLinkShare}
-                        onUpdateLinkPermission={onUpdateLinkPermission}
-                        isProcessing={isProcessing}
-                    />
-                )}
+                    {canView && (
+                        <LinkShareSection
+                            linkShare={item.linkShare}
+                            canEdit={canEdit}
+                            onEnableLinkShare={onEnableLinkShare}
+                            onDisableLinkShare={onDisableLinkShare}
+                            onUpdateLinkPermission={onUpdateLinkPermission}
+                            isProcessing={isProcessing}
+                        />
+                    )}
 
-                {/* Admin view message */}
-                {isAdmin && !isOwner && (
-                    <div className="share-info-message">
-                        <span role="img" aria-label="info">ℹ️</span>
-                        You can view sharing information but cannot make changes.
-                    </div>
-                )}
+                    {isAdmin && !isOwner && (
+                        <div className="mx-5 my-4 flex items-center gap-2 rounded border border-cyan-900/50 bg-cyan-950/30 px-3 py-2 text-sm text-cyan-400">
+                            <span role="img" aria-label="info">ℹ️</span>
+                            You can view sharing information but cannot make changes.
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

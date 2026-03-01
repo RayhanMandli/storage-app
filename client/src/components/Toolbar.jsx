@@ -3,127 +3,37 @@
 
 import { Link } from "react-router-dom";
 
-// IMPORTANT: Does not alter any backend interaction. Buttons call through provided handlers.
 export default function Toolbar({
-    onNewFolderToggle,
-    onUploadToggle,
-    showDriveConnect,
-    onDriveConnect,
-    currentPathLabel,
-    loggedIn,
-    userName,
-    onLogout,
-    onLogoutAll,
-    onSetPassword,
-    isMenuOpen,
-    onMenuToggle,
-    showNewFolder = true,
-    showUpload = true,
-    userHasPassword = false, // New prop to indicate if user has a password
+    nameArray,
+    idArray
 }) {
+    
     return (
-        <div className="explorer-toolbar">
-            <div className="btn-group">
-                <Link style={{ color: "gray", fontSize: "12px" }} to="/users">
-                    See Users
-                </Link>
-                {showNewFolder && (
-                    <button className="toolbar-btn" onClick={onNewFolderToggle}>
-                        New Folder
-                    </button>
-                )}
-                {showUpload && (
-                    <button className="toolbar-btn" onClick={onUploadToggle}>
-                        Upload
-                    </button>
-                )}
-                {showDriveConnect && (
-                    <button className="toolbar-btn" onClick={onDriveConnect}>
-                        Connect Google Drive
-                    </button>
-                )}
+        <div className="sticky top-0 z-10 flex items-center justify-between gap-3 bg-zinc-900 border-b border-zinc-800 px-6 py-3">
+            {/* Breadcrumb */}
+            <div className="flex-1 flex items-center gap-2 text-sm text-zinc-400">
+                <svg className="w-4 h-4 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                </svg>
+                {nameArray.map((segment, index) => {
+                    return (
+                        <a key={idArray[index]} href={`/directory/${idArray[index]}`} className="text-zinc-300 font-medium">{index===0 ? "root >":segment+" > "}</a>
+                    )
+                })}
             </div>
-            <span className="explorer-path">{currentPathLabel}</span>
-            <div>
-                {loggedIn ? (
-                    <div
-                        style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "8px",
-                        }}
-                    >
-                        <span style={{ fontSize: "13px", color: "#616161" }}>
-                            {userName}
-                        </span>
-                        <div style={{ position: "relative" }}>
-                            <button
-                                className="toolbar-btn"
-                                aria-haspopup="true"
-                                aria-expanded={Boolean(isMenuOpen)}
-                                onClick={onMenuToggle}
-                            >
-                                ⋮
-                            </button>
-                            {isMenuOpen && (
-                                <div
-                                    style={{
-                                        position: "absolute",
-                                        right: 0,
-                                        top: "100%",
-                                        marginTop: "4px",
-                                        background: "#fff",
-                                        border: "1px solid #ddd",
-                                        borderRadius: "4px",
-                                        boxShadow: "0 2px 6px rgba(0,0,0,0.12)",
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        minWidth: "140px",
-                                        zIndex: 10,
-                                    }}
-                                >
-                                    <button
-                                        className="toolbar-btn"
-                                        style={{
-                                            width: "100%",
-                                            textAlign: "left",
-                                        }}
-                                        onClick={onLogout}
-                                    >
-                                        Logout
-                                    </button>
-                                    <button
-                                        className="toolbar-btn"
-                                        style={{
-                                            width: "100%",
-                                            textAlign: "left",
-                                        }}
-                                        onClick={onLogoutAll}
-                                    >
-                                        Logout All
-                                    </button>
-                                    {!userHasPassword && (
-                                        <button
-                                            className="toolbar-btn"
-                                            style={{
-                                                width: "100%",
-                                                textAlign: "left",
-                                            }}
-                                            onClick={onSetPassword}
-                                        >
-                                            Set Password
-                                        </button>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                ) : (
-                    // Keep original Login link structure. Parent still provides routing via react-router.
-                    <a href="/login" className="toolbar-btn">
-                        Login
-                    </a>
-                )}
+
+            {/* Right Actions - Minimal */}
+            <div className="flex items-center gap-2">
+                <button className="p-2 rounded-lg text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100 transition-colors">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </button>
+                <button className="p-2 rounded-lg text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100 transition-colors">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    </svg>
+                </button>
             </div>
         </div>
     );

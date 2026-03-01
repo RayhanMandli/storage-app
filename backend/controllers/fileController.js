@@ -9,109 +9,136 @@ import {
     logInfo,
 } from "../utils/logger.js";
 import domPurifier from "../utils/dompurifier.js";
+import { rm } from "fs/promises";
+import { Directory } from "../models/directoryModel.js";
+import mongoose from "mongoose";
+
+const maxLimit = {
+    file: 100 * 1024 * 1024, // 100 MB
+    profilePicture: 5 * 1024 * 1024, // 5 MB
+};
+
+async function parentDirArrayBuilder(dirId, parents) {
+    return Directory.findById(dirId).then((dir) => {
+        if (dir) {
+            parents.push(dir._id);
+            if (dir.parentDirId) {
+                return parentDirArrayBuilder(dir.parentDirId, parents);
+            }
+        }
+        return Promise.resolve();
+    });
+}
 
 export const uploadFileController = async (req, res, next) => {
-    let parentDirId = req.headers["parentdirid"];
-    if (parentDirId !== "root") {
-        parentDirId = new ObjectId(parentDirId);
-    } else {
-        parentDirId = req.user.rootDirId;
-    }
-    let { filename } = domPurifier(req.params);
-    const extension = path.extname(filename);
-
-    // Log file upload attempt
-    logInfo("File upload initiated", {
-        userId: req.user._id,
-        filename,
-        extension,
-        parentDirId,
-        ip: req.ip,
-    });
-
     try {
-        // Validate filename to prevent path traversal
+        let parentDirId = req.headers["parentdirid"];
+        const filesize = Number(req.headers["filesize"]);
+
+        if (!Number.isFinite(filesize)) {
+            return res.status(400).json({ message: "Invalid filesize header" });
+        }
+
+        if (filesize > maxLimit.file) {
+            res.status(413).end();
+            return req.destroy();
+        }
+
+        parentDirId =
+            parentDirId === "root"
+                ? req.user.rootDirId
+                : new ObjectId(parentDirId);
+
+        let { filename } = domPurifier(req.params);
+        const extension = path.extname(filename);
+
         if (
             !filename ||
             filename.includes("..") ||
             filename.includes("/") ||
             filename.includes("\\")
         ) {
-            logSecurity("FILE_UPLOAD_INVALID_FILENAME", {
-                userId: req.user._id,
-                filename,
-                ip: req.ip,
-            });
             return res.status(400).json({ message: "Invalid filename" });
         }
 
-        // Create file record in database
-        const newFile = await File.insertOne({
-            filename,
-            extension,
-            parentDirId,
-            userId: req.user._id,
-        });
+        const session = await mongoose.startSession();
 
-        const fileNameWithID = newFile._id.toString() + extension;
-        const filePath = `./storage/${fileNameWithID}`;
+        session.startTransaction();
+        let newFile;
 
-        // Create write stream for file storage
+        // Upload file and update directory sizes atomically
+        try {
+            newFile = await File.insertOne(
+                {
+                    filename,
+                    filesize,
+                    extension,
+                    parentDirId,
+                    userId: req.user._id,
+                },
+                { session }
+            );
+            const parents = [];
+            await parentDirArrayBuilder(parentDirId, parents);
+            await Directory.updateMany(
+                { _id: { $in: parents } },
+                { $inc: { size: filesize } },
+                { session }
+            );
+            await session.commitTransaction();
+        } catch (err) {
+            await session.abortTransaction();
+            throw err;
+        }finally{
+            session.endSession();
+        }
+
+        const fileNameWithID = `${newFile._id}${extension}`;
+        const filePath = path.join(process.cwd(), "storage", fileNameWithID);
         const writeStream = createWriteStream(filePath);
 
-        // Handle stream errors
-        writeStream.on("error", (error) => {
-            logError("File write stream error", error, {
-                userId: req.user._id,
-                filename,
-                fileId: newFile._id,
-            });
+        let receivedBytes = 0;
+        let aborted = false;
 
-            // Clean up database record if file write fails
-            File.deleteOne({ _id: newFile._id }).catch((err) => {
-                logError(
-                    "Failed to cleanup file record after write error",
-                    err
-                );
-            });
+        req.on("data", (chunk) => {
+            if (aborted) return;
 
+            receivedBytes += chunk.length;
+
+            if (receivedBytes > maxLimit.file) {
+                aborted = true;
+                res.status(413).json({
+                    message: `File size exceeds ${maxLimit.file} bytes`,
+                });
+
+                writeStream.destroy();
+                File.deleteOne({ _id: newFile._id }).catch(() => {});
+                rm(filePath).catch(() => {});
+                return req.destroy();
+            }
+
+            if (!writeStream.write(chunk)) {
+                req.pause();
+                writeStream.once("drain", () => req.resume());
+            }
+        });
+
+        req.on("end", () => writeStream.end());
+
+        req.on("error", () => {
+            writeStream.destroy();
+        });
+
+        writeStream.on("error", async () => {
+            await File.deleteOne({ _id: newFile._id }).catch(() => {});
             res.status(500).json({ message: "File upload failed" });
         });
 
-        // Pipe request stream to file
-        req.pipe(writeStream);
-
-        // Handle successful file write
-        writeStream.on("finish", async () => {
-            // Log successful file upload
-            logFileOperation(
-                "upload",
-                req.user._id,
-                newFile._id,
-                filename,
-                true
-            );
-
-            logInfo("File upload completed", {
-                userId: req.user._id,
-                fileId: newFile._id,
-                filename,
-                size: req.headers["content-length"] || "unknown",
-            });
-
+        writeStream.on("finish", () => {
             res.status(200).json({ message: "File uploaded successfully" });
         });
-    } catch (error) {
-        // Log database insertion error
-        logError("File upload database error", error, {
-            userId: req.user._id,
-            filename,
-            extension,
-            parentDirId,
-        });
-
-        res.status(500).json({ message: "File upload failed" });
-        next(error);
+    } catch (err) {
+        next(err);
     }
 };
 
@@ -143,8 +170,6 @@ export const serveFileController = async (req, res, next) => {
             });
             return res.status(404).json({ message: "File not found" });
         }
-
-        
 
         // Set appropriate headers for download
         if (action === "download") {
@@ -197,7 +222,7 @@ export const serveFileController = async (req, res, next) => {
 
 export const renameFileController = async (req, res, next) => {
     const { id } = req.params;
-    let { newName } = domPurifier(req.body)
+    let { newName } = domPurifier(req.body);
     // Validate inputs
     if (!ObjectId.isValid(id)) {
         logSecurity("FILE_RENAME_INVALID_ID", {

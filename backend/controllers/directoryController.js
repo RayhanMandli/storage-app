@@ -11,7 +11,7 @@ export const getDirectoryController = async (req, res) => {
     if (targetUserId) {
         const isSelf = requesterId.toString() === targetUserId.toString();
         if (!isSelf) {
-            if (!canAccessUserData(req.user.role, "canView")) {
+            if (!canAccessUserData(req.user, "canView" )) {
                 return res
                     .status(403)
                     .json({ error: "Forbidden: Insufficient permissions." });
@@ -26,9 +26,9 @@ export const getDirectoryController = async (req, res) => {
     }
 
     const dirid = req.params.id
-        ? new ObjectId(req.params.id)
+        ? req.params.id
         : targetUser.rootDirId;
-    const directoryData = await Directory.findById(dirid);
+    const directoryData = await Directory.findById(dirid).populate({path: "path", select: "name"});
 
     if (!directoryData)
         return res.status(404).json({ message: "Directory not found" });
@@ -48,11 +48,36 @@ export const getDirectoryController = async (req, res) => {
     });
     filesWithSelfShared.push(...otherUserFilesWithSharedBy);
     const directories = await Directory.find({ parentDirId: dirid }).lean();
+    // const directoriesWithSize = await Promise.all(
+    //     directories.map(async (dir) => {
+    //         const dirSizeAgg = await File.aggregate([
+    //             { $match: { parentDirId: dir._id } },
+    //             {
+    //                 $group: {
+    //                     _id: null,
+    //                     totalSize: { $sum: "$filesize" },
+    //                 },
+    //             },
+    //         ]);
+    //         const dirSizeAggSubdirs = await Directory.aggregate([
+    //             { $match: { parentDirId: dir._id } },
+    //             { $group: {
+    //                     _id: null,
+    //                     totalSize: { $sum: "$size" },
+    //                 },}
+    //         ]);
+    //         const subdirsSize =
+    //             dirSizeAggSubdirs.length > 0 ? dirSizeAggSubdirs[0].totalSize : 0;
+    //         const filesSize =
+    //             dirSizeAgg.length > 0 ? dirSizeAgg[0].totalSize : 0;
+    //         return { ...dir, size: filesSize + subdirsSize };
+    //     })
+    // );
 
     res.json({
-        ...directoryData,
+        directoryData,
         files: filesWithSelfShared,
-        directories,
+        directories
     });
 };
 
@@ -75,8 +100,9 @@ export const createDirectoryController = async (req, res) => {
             name: dirname,
             parentDirId,
             userId,
+            path: [...parentDir.path]
         });
-
+        newDir.path.push(newDir._id)
         await newDir.save();
         res.status(200).json({ message: "Directory created successfully" });
     } catch (e) {

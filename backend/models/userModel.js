@@ -50,6 +50,10 @@ const userSchema = new Schema({
         type: Boolean,
         default: false,
     },
+    maxLimit:{
+        type: Number,
+        default: 16106127360 //15 GB
+    }
 });
 
 // Hashing password before saving

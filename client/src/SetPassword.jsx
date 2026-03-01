@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "./Auth.css";
 
 const SetPassword = () => {
     const BASE_URL = "http://localhost:4000";
@@ -82,71 +81,68 @@ const SetPassword = () => {
         }
     };
 
+    const labelBase = "block text-sm font-semibold text-gray-800 mb-1";
+    const inputBase = (hasError = false) =>
+        `w-full rounded border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${hasError ? "border-red-500" : "border-gray-300"}`;
+
     return (
-        <div className="container">
-            <h2 className="heading">Set Your Password</h2>
-            <p style={{ textAlign: "center", marginBottom: "20px", color: "#666" }}>
-                Create a password to secure your account
-            </p>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+            <div className="w-full max-w-md bg-white shadow-md rounded-xl p-6 space-y-4">
+                <h2 className="text-2xl font-bold text-gray-900 text-center">Set Your Password</h2>
+                <p className="text-center text-sm text-gray-600">
+                    Create a password to secure your account
+                </p>
 
-            <form className="form" onSubmit={handleSubmit}>
-                {/* Password Field */}
-                <div className="form-group">
-                    <label htmlFor="password" className="label">
-                        Password
-                    </label>
-                    <input
-                        type="password"
-                        id="password"
-                        name="password"
-                        value={formData.password}
-                        onChange={handleChange}
-                        className={errors.password ? "input input-error" : "input"}
-                        placeholder="Enter your password"
-                    />
-                    {errors.password && (
-                        <span className="error-msg">{errors.password}</span>
-                    )}
-                </div>
-
-                {/* Confirm Password Field */}
-                <div className="form-group">
-                    <label htmlFor="confirmPassword" className="label">
-                        Confirm Password
-                    </label>
-                    <input
-                        type="password"
-                        id="confirmPassword"
-                        name="confirmPassword"
-                        value={formData.confirmPassword}
-                        onChange={handleChange}
-                        className={errors.confirmPassword ? "input input-error" : "input"}
-                        placeholder="Confirm your password"
-                    />
-                    {errors.confirmPassword && (
-                        <span className="error-msg">{errors.confirmPassword}</span>
-                    )}
-                </div>
-
-                {/* Server Error */}
-                {serverError && (
-                    <div style={{ color: "red", marginBottom: "10px", textAlign: "center" }}>
-                        {serverError}
+                <form className="space-y-4" onSubmit={handleSubmit}>
+                    <div className="space-y-1">
+                        <label htmlFor="password" className={labelBase}>
+                            Password
+                        </label>
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            value={formData.password}
+                            onChange={handleChange}
+                            className={inputBase(Boolean(errors.password))}
+                            placeholder="Enter your password"
+                        />
+                        {errors.password && (
+                            <p className="text-xs text-red-600">{errors.password}</p>
+                        )}
                     </div>
-                )}
 
-                {/* Success Message */}
-                {successMessage && (
-                    <div style={{ color: "green", marginBottom: "10px", textAlign: "center" }}>
-                        {successMessage}
+                    <div className="space-y-1">
+                        <label htmlFor="confirmPassword" className={labelBase}>
+                            Confirm Password
+                        </label>
+                        <input
+                            type="password"
+                            id="confirmPassword"
+                            name="confirmPassword"
+                            value={formData.confirmPassword}
+                            onChange={handleChange}
+                            className={inputBase(Boolean(errors.confirmPassword))}
+                            placeholder="Confirm your password"
+                        />
+                        {errors.confirmPassword && (
+                            <p className="text-xs text-red-600">{errors.confirmPassword}</p>
+                        )}
                     </div>
-                )}
 
-                {/* Submit Button */}
-                <button type="submit" className="submit-button">
-                    Set Password
-                </button>
-            </form>
+                    {serverError && (
+                        <div className="text-center text-sm text-red-600">{serverError}</div>
+                    )}
+
+                    {successMessage && (
+                        <div className="text-center text-sm text-green-600">{successMessage}</div>
+                    )}
+
+                    <button type="submit" className="h-10 w-full rounded bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition">
+                        Set Password
+                    </button>
+                </form>
+            </div>
         </div>
     );
 };

@@ -40,7 +40,6 @@ export const googleDriveCallback = async (req, res) => {
 };
 export const listRootContents = async (req, res) => {
     const token = await getValidAccessToken(req.user);
-
     const resp = await fetch(
         "https://www.googleapis.com/drive/v3/files?" +
             new URLSearchParams({

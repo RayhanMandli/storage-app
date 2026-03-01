@@ -7,6 +7,10 @@ import Login from "./Login";
 import AllUsers from "./AllUsers";
 import AdminUserData from "./AdminUserData";
 import SetPassword from "./SetPassword";
+import Home from "./Home";
+import Pricing from "./Pricing";
+import About from "./About";
+import Features from "./Features";
 
 const App = () => {
     const client_id =
@@ -33,8 +37,24 @@ const App = () => {
             element: <Login />,
         },
         {
-            path: "*",
+            path: "/pricing",
+            element: <Pricing />,
+        },
+        {
+            path: "/about",
+            element: <About />,
+        },
+        {
+            path: "/features",
+            element: <Features />,
+        },
+        {
+            path: "/*",
             element: <DirectoryUI />,
+        },
+        {
+            path: "/home",
+            element: <Home />,
         },
     ]);
     return (

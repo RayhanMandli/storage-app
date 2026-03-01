@@ -31,16 +31,16 @@ export default function SharedUserRow({
     };
 
     return (
-        <div className="shared-user-row">
-            <div className="shared-user-info">
-                <span className="shared-user-icon" role="img" aria-label="user">
+        <div className="flex items-center justify-between rounded border border-gray-200 bg-gray-50 px-3 py-2">
+            <div className="flex items-center gap-2">
+                <span className="text-lg" role="img" aria-label="user">
                     👤
                 </span>
-                <span className="shared-user-name">{displayName}</span>
+                <span className="text-sm text-gray-900">{displayName}</span>
             </div>
-            <div className="shared-user-actions">
+            <div className="flex items-center gap-2">
                 <select
-                    className="share-select-small"
+                    className="h-9 rounded border border-gray-300 px-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={currentPermission}
                     onChange={handlePermissionChange}
                     disabled={!canEdit || isProcessing}
@@ -50,7 +50,7 @@ export default function SharedUserRow({
                 </select>
                 {canEdit && (
                     <button
-                        className="action-btn share-remove-btn"
+                        className="h-9 px-3 rounded border border-red-200 bg-red-50 text-sm font-semibold text-red-700 hover:bg-red-100"
                         onClick={handleRemove}
                         disabled={isProcessing}
                         title="Remove access"

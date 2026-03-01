@@ -12,6 +12,11 @@ const fileSchema = new Schema(
             required: true,
             match: [/\.([a-zA-Z0-9]+)$/, "Invalid file extension"],
         },
+        filesize: {
+            type: Number,
+            required: true,
+            min:0,
+        },
         parentDirId: {
             type: Schema.Types.ObjectId,
             required: true,

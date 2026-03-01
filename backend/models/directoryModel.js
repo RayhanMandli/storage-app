@@ -5,6 +5,10 @@ const directorySchema = new Schema({
     type: String,
     required: true,
   },
+  size:{
+    type: Number,
+    default: 0
+  },
   parentDirId: {
     type: Schema.Types.ObjectId,
     default: null,
@@ -15,6 +19,11 @@ const directorySchema = new Schema({
     required: true,
     ref: "User",
   },
-});
+  path:{
+    type: [Schema.Types.ObjectId],
+    ref: "Directory",
+    default: []
+  }
+}, { timestamps: true });
 
 export const Directory = model("Directory", directorySchema);

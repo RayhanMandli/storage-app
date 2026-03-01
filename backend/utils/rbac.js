@@ -39,7 +39,7 @@ export const dataAccessRules = {
 export function canAccessUserData(requester, action, file) {
     if (requester.role === "owner") return true;
     if (requester.role === "admin" && action === "canView") return true;
-    if (file.userId.toString() === requester._id.toString()) return true;
+    if (file?.userId.toString() === requester._id.toString()) return true;
     const sharedEntry = file.sharedWith.find((e) => {
         return e.userId.toString() === requester._id.toString();
     });

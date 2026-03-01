@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import './ChangeRoleModal.css';
+import { useEffect, useState } from 'react';
 
 export default function ChangeRoleModal({
   open,
@@ -11,6 +10,10 @@ export default function ChangeRoleModal({
   roleChangeError = null
 }) {
   const [selectedRole, setSelectedRole] = useState(currentRole);
+
+  useEffect(() => {
+    setSelectedRole(currentRole);
+  }, [currentRole]);
 
   if (!open) return null;
 
@@ -25,28 +28,28 @@ export default function ChangeRoleModal({
   };
 
   return (
-    <div className="change-role-overlay">
-      <div className="change-role-content">
-        <h2 className="change-role-title">Change User Role</h2>
-        
-        <div className="change-role-body">
-          <div className="change-role-user-info">
-            <p className="change-role-label">User:</p>
-            <p className="change-role-username">{userName}</p>
+    <div className="fixed inset-0 z-[1000] bg-black/60 flex items-center justify-center">
+      <div className="w-[420px] max-w-full rounded-xl bg-white shadow-2xl p-6 space-y-5">
+        <h2 className="text-xl font-semibold text-gray-900">Change User Role</h2>
+
+        <div className="space-y-3">
+          <div>
+            <p className="text-sm font-semibold text-gray-700">User:</p>
+            <p className="text-base font-medium text-gray-900">{userName}</p>
           </div>
 
-          <div className="change-role-current">
-            <p className="change-role-label">Current Role:</p>
-            <p className="change-role-current-role">{currentRole}</p>
+          <div className="bg-gray-100 rounded-lg px-3 py-2">
+            <p className="text-sm font-semibold text-gray-700">Current Role:</p>
+            <p className="text-base font-medium text-gray-900">{currentRole}</p>
           </div>
 
-          <div className="change-role-dropdown-group">
-            <label htmlFor="role-select" className="change-role-label">
+          <div className="space-y-1">
+            <label htmlFor="role-select" className="text-sm font-semibold text-gray-700">
               Select New Role:
             </label>
             <select
               id="role-select"
-              className="change-role-select"
+              className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={selectedRole}
               onChange={(e) => setSelectedRole(e.target.value)}
               disabled={isLoading}
@@ -57,23 +60,23 @@ export default function ChangeRoleModal({
                 </option>
               ))}
             </select>
-          </div>
             {roleChangeError && (
-              <p className="change-role-error">{roleChangeError}</p>
+              <p className="text-sm text-red-600">{roleChangeError}</p>
             )}
+          </div>
         </div>
 
-        <div className="change-role-actions">
+        <div className="flex justify-end gap-3">
           <button
             onClick={onCancel}
-            className="change-role-cancel-btn"
+            className="h-10 px-4 rounded bg-gray-200 text-gray-800 text-sm font-semibold hover:bg-gray-300"
             disabled={isLoading}
           >
             Cancel
           </button>
           <button
             onClick={handleConfirm}
-            className="change-role-confirm-btn"
+            className="h-10 px-4 rounded bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:bg-gray-400"
             disabled={isLoading || selectedRole === currentRole}
           >
             {isLoading ? 'Updating...' : 'Confirm'}

@@ -2,13 +2,17 @@ import { User } from "../models/userModel.js";
 import Session from "../models/sessionModel.js";
 import { Directory } from "../models/directoryModel.js";
 import { canChangeRole } from "../utils/rbac.js";
+import redisClient from "../middlewares/redis.js";
 
-export const getUserProfile = (req, res) => {
+export const getUserProfile = async (req, res) => {
+   const rootDir =  await Directory.findById(req.user.rootDirId);
     res.status(200).json({
         name: req.user.name,
         email: req.user.email,
         connected: req.user.googleDrive?.refresh_token ? true : false,
         hasPassword: !!req.user.password,
+        currentUsage: rootDir.size || 0,
+        limit: req.user.maxLimit,
         role: req.user.role,
     });
 };
@@ -28,9 +32,16 @@ export const getAllUsers = async (req, res) => {
             .select("_id name role")
             .lean();
         for (const user of users) {
-            const sessionCount = await Session.countDocuments({
-                userId: user._id,
-            });
+            const { total: sessionCount } = await redisClient.ft.search(
+            "userIdx",
+            `@user:{${user._id.toString()}}`,
+            {
+                LIMIT: {
+                    from: 0,
+                    size: 0,
+                },
+            }
+        );
             if (sessionCount > 0) {
                 user.isLoggedIn = true;
             } else {

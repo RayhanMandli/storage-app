@@ -1,7 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import "./App.css";
-import "./components/ui-polish.css";
 import Toolbar from "./components/Toolbar";
 import NewFolderModal from "./components/NewFolderModal";
 import UploadModal from "./components/UploadModal";
@@ -282,10 +280,15 @@ export default function AdminUserData() {
   }, [dirPath]);
 
   return (
-    <div className="explorer-container">
-      <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
-        <button className="toolbar-btn" onClick={() => navigate("/users")}>Back</button>
-        <div style={{ fontWeight: 600 }}>
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">
+      <div className="flex items-center gap-3 px-4 pt-4 pb-2">
+        <button
+          className="h-9 px-4 rounded border border-zinc-700 bg-zinc-900 text-sm font-medium text-zinc-100 hover:bg-zinc-800 transition-colors"
+          onClick={() => navigate("/users")}
+        >
+          Back
+        </button>
+        <div className="font-semibold text-zinc-200">
           Viewing Data for: {targetUserLabel || userId}
         </div>
       </div>
@@ -333,22 +336,26 @@ export default function AdminUserData() {
         </div>
       )}
 
-      {message && <div className="error-message">{message}</div>}
+      {message && (
+        <div className="mx-4 mt-3 rounded border border-red-900/50 bg-red-950/30 px-3 py-2 text-sm text-red-400">
+          {message}
+        </div>
+      )}
 
-      <div className="explorer-table-wrapper">
-        {loading && <div className="loading-indicator">Loading...</div>}
-        {noFilesMsg && <div className="no-file-msg">{noFilesMsg}</div>}
-        <table className="explorer-table">
-          <thead>
+      <div className="flex-1 overflow-auto px-4 pb-6 pt-2">
+        {loading && <div className="text-sm text-zinc-400">Loading...</div>}
+        {noFilesMsg && <div className="text-center text-sm text-zinc-500">{noFilesMsg}</div>}
+        <table className="w-full border-collapse bg-zinc-900 shadow-sm shadow-black/20 rounded-lg overflow-hidden">
+          <thead className="bg-zinc-800/50 text-xs uppercase text-zinc-400">
             <tr>
-              <th style={{ width: "40px" }}></th>
-              <th>Name</th>
-              <th>Type</th>
-              <th>Actions</th>
-              <th>Created At</th>
+              <th className="w-10 px-4 py-2 text-left"></th>
+              <th className="px-2 py-2 text-left">Name</th>
+              <th className="px-2 py-2 text-left">Type</th>
+              <th className="px-2 py-2 text-left">Actions</th>
+              <th className="px-4 py-2 text-left">Created At</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-zinc-800">
             {dirItems.directories.map((dir) => (
               <DirectoryRow
                 key={dir._id || dir.id}
