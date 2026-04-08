@@ -49,12 +49,12 @@ const App = () => {
             element: <Features />,
         },
         {
-            path: "/*",
-            element: <DirectoryUI />,
-        },
-        {
             path: "/home",
             element: <Home />,
+        },
+        {
+            path: "/*",
+            element: <DirectoryUI />,
         },
     ]);
     return (
