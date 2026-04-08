@@ -8,7 +8,7 @@ import DirectoryRow from "./components/DirectoryRow";
 import FileRow from "./components/FileRow";
 import EmptyState from "./components/EmptyState";
 
-const BASE_URL = "http://localhost:4000";
+const BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
 export default function AdminUserData() {
     const { userId, "*": dirPath } = useParams();

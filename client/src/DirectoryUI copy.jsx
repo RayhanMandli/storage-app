@@ -5,7 +5,7 @@ import { useContext } from "react";
 
 function DirectoryUI() {
     const { routesDisplay, setRoutesDisplay } = useContext(DirectoryContext);
-    const BASE_URL = "http://localhost:4000";
+    const BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
     const [dirItems, setDirItems] = useState([]);
     const [renameBox, setRenameBox] = useState("");
     const [isRenaming, setIsRenaming] = useState(false);
@@ -190,7 +190,7 @@ function DirectoryUI() {
             client_id:
                 "520971006621-jur4rdm3hnpfgi5mfrbm3s2ort7p50so.apps.googleusercontent.com",
             redirect_uri:
-                "http://localhost:4000/integrations/google-drive/callback",
+                `${import.meta.env.VITE_BACKEND_URL}/integrations/google-drive/callback`,
             response_type: "code",
             access_type: "offline", // IMPORTANT → gives refresh_token
             scope: "https://www.googleapis.com/auth/drive.readonly",

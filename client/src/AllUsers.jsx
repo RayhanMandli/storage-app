@@ -4,7 +4,7 @@ import DeletePopup from "./components/DeletePopup";
 import ChangeRoleModal from "./components/ChangeRoleModal";
 
 export default function AllUsers() {
-    const BASE_URL = "http://localhost:4000";
+    const BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
     const [users, setUsers] = useState([]);
     const [error, setError] = useState("");
     const [roleChangeError, setRoleChangeError] = useState("");

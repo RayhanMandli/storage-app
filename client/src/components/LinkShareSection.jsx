@@ -25,7 +25,7 @@ export default function LinkShareSection({
     const isEnabled = linkShare && linkShare.enabled;
     const shareToken = linkShare?.token;
     const currentLinkPermission = linkShare?.permission || "viewer";
-    const BASE_URL = "http://localhost:4000";
+    const BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
     const shareLink = shareToken ? `${BASE_URL}/share/${shareToken}` : "";
 
     const handleEnableLink = async () => {
