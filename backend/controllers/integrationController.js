@@ -32,7 +32,7 @@ export const googleDriveCallback = async (req, res) => {
                 },
             }
         );
-        res.redirect("http://localhost:5173");
+        res.redirect(process.env.CLIENT_URL);
     } catch (err) {
         console.error("Error in Google Drive callback:", err);
         return res.status(500).send("Internal Server Error");

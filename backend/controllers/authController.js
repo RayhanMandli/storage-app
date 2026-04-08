@@ -128,7 +128,7 @@ export const userLogin = async (req, res) => {
             maxAge: 24 * 60 * 60 * 1000, // 24 hours
             signed: true,
             httpOnly: true,
-            sameSite: "lax",
+            sameSite: "none",
             secure: true,
         });
 
@@ -272,7 +272,7 @@ export const handleGoogleLogin = async (req, res) => {
             maxAge: 24 * 60 * 60 * 1000, // 24 hours
             signed: true,
             httpOnly: true,
-            sameSite: "lax",
+            sameSite: "none",
             secure: true,
         });
 
@@ -294,7 +294,7 @@ export const handleGoogleLogin = async (req, res) => {
                 maxAge: 24 * 60 * 60 * 1000, // 24 hours
                 signed: true,
                 httpOnly: true,
-                sameSite: "lax",
+                sameSite: "none",
                 secure: true,
             });
 
@@ -316,7 +316,7 @@ export const handleGoogleLogin = async (req, res) => {
             maxAge: 24 * 60 * 60 * 1000, // 24 hours
             signed: true,
             httpOnly: true,
-            sameSite: "lax",
+            sameSite: "none",
             secure: true,
         });
         return res.status(201).json({ message: "User logged in with google" });
@@ -372,11 +372,11 @@ export const handleGithubLogin = async (req, res) => {
             maxAge: 24 * 60 * 60 * 1000, // 24 hours
             signed: true,
             httpOnly: true,
-            sameSite: "lax",
+            sameSite: "none",
             secure: true,
         });
 
-        return res.redirect("http://localhost:5173");
+        return res.redirect(process.env.CLIENT_URL);
     }
     if (user.githubId) {
         if (user.githubId !== "" + githubId) {
@@ -394,11 +394,11 @@ export const handleGithubLogin = async (req, res) => {
                 maxAge: 24 * 60 * 60 * 1000, // 24 hours
                 signed: true,
                 httpOnly: true,
-                sameSite: "lax",
+                sameSite: "none",
                 secure: true,
             });
 
-            return res.redirect("http://localhost:5173");
+            return res.redirect(process.env.CLIENT_URL);
         }
     } else if (!user.githubId) {
         user.githubId = githubId;
@@ -416,10 +416,10 @@ export const handleGithubLogin = async (req, res) => {
             maxAge: 24 * 60 * 60 * 1000, // 24 hours
             signed: true,
             httpOnly: true,
-            sameSite: "lax",
+            sameSite: "none",
             secure: true,
         });
 
-        return res.redirect("http://localhost:5173");
+        return res.redirect(process.env.CLIENT_URL);
     }
 };
