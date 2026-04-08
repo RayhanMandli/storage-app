@@ -23,6 +23,6 @@
     "scripts": {
         "dev": "node --watch app.js",
         "start": "node app.js",
-        "build": "echo 'No build step required for this project'"
+        "build": "npm install"
     }
 }
