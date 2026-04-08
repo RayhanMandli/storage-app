@@ -9,7 +9,7 @@ import {
     logInfo,
 } from "../utils/logger.js";
 import domPurifier from "../utils/dompurifier.js";
-import { rm } from "fs/promises";
+import { rm, stat } from "fs/promises";
 import { Directory } from "../models/directoryModel.js";
 import mongoose from "mongoose";
 
@@ -181,7 +181,6 @@ export const serveFileController = async (req, res, next) => {
 
         // Construct safe file path
         const filePath = `${process.cwd()}/storage/${id}${file.extension}`;
-
         // Log file access
         logFileOperation(
             action === "download" ? "download" : "view",

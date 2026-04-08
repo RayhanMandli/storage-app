@@ -1,8 +1,12 @@
 import { User } from "../models/userModel.js";
-import Session from "../models/sessionModel.js";
 import { Directory } from "../models/directoryModel.js";
+import { File } from "../models/fileModel.js";
 import { canChangeRole } from "../utils/rbac.js";
 import redisClient from "../middlewares/redis.js";
+import {
+    deleteAllSessionsForUser,
+    getSessionCount,
+} from "../services/sessionService.js";
 
 export const getUserProfile = async (req, res) => {
    const rootDir =  await Directory.findById(req.user.rootDirId);
@@ -32,16 +36,10 @@ export const getAllUsers = async (req, res) => {
             .select("_id name role")
             .lean();
         for (const user of users) {
-            const { total: sessionCount } = await redisClient.ft.search(
-            "userIdx",
-            `@user:{${user._id.toString()}}`,
-            {
-                LIMIT: {
-                    from: 0,
-                    size: 0,
-                },
-            }
-        );
+            const sessionCount = await getSessionCount(
+                redisClient,
+                user._id.toString(),
+            );
             if (sessionCount > 0) {
                 user.isLoggedIn = true;
             } else {
@@ -85,7 +83,7 @@ export const setUserPassword = async (req, res) => {
 export const logoutUserById = async (req, res) => {
     const { userId } = req.params;
     try {
-        await Session.deleteMany({ userId });
+        await deleteAllSessionsForUser(redisClient, userId);
         res.status(200).json({ message: "User logged out successfully" });
     } catch (error) {
         res.status(500).json({ message: "Failed to log out user" });
@@ -94,7 +92,7 @@ export const logoutUserById = async (req, res) => {
 export const softDeleteUserById = async (req, res) => {
     const { userId } = req.params;
     try {
-        await Session.deleteMany({ userId });
+        await deleteAllSessionsForUser(redisClient, userId);
         const user = await User.findByIdAndUpdate(userId, { isDeleted: true });
         if (!user) {
             return res.status(404).json({ message: "User not found" });
@@ -119,7 +117,7 @@ export const recoverSoftDeletedUserById = async (req, res) => {
 export const hardDeleteUserById = async (req, res) => {
     const { userId } = req.params;
     try {
-        await Session.deleteMany({ userId });
+        await deleteAllSessionsForUser(redisClient, userId);
         await User.findByIdAndDelete(userId);
         await Directory.deleteMany({ userId });
         await File.deleteMany({ userId });

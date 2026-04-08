@@ -29,7 +29,6 @@ export const sensitiveLimiter = rateLimit({
 });
 export function throttle({ delayMs, windowSize }) {
     return function (req, res, next) {
-        console.log(req.ip, throttleStore);
         if (throttleStore[req.ip] === undefined) {
             throttleStore[req.ip] = {
                 count: 0,

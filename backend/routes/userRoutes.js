@@ -31,5 +31,5 @@ router.patch("/recover/:userId", isOwner, recoverSoftDeletedUserById);
 router.patch("/change-role/:userId", isAuthority, changeUserRoleById);
 
 router.delete("/delete/:userId/hard", isHigherAuthority, hardDeleteUserById);
-
+    
 export default router;

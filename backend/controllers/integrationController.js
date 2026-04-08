@@ -52,6 +52,7 @@ export const listRootContents = async (req, res) => {
     );
 
     const data = await resp.json();
+    console.log("gdrive data: ",data)
     const files = data.files
         .filter((f) => f.mimeType !== "application/vnd.google-apps.folder")
         .map((f) => ({ _id: f.id, name: f.name, pDir: null, source: "drive" }));

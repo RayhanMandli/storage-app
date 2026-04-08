@@ -1,11 +1,8 @@
 // Pure presentational toolbar component.
 // Receives only UI related props & callbacks. All logic/state lives in parent.
-
-import { Link } from "react-router-dom";
-
 export default function Toolbar({
-    nameArray,
-    idArray
+    nameArray=[],
+    idArray=[],
 }) {
     
     return (

@@ -1,4 +1,3 @@
-import qs from "querystring";
 import { User } from "../models/userModel.js";
 import "dotenv/config";
 
@@ -12,7 +11,7 @@ export async function refreshGoogleDriveToken(user) {
         headers: {
             "Content-Type": "application/x-www-form-urlencoded",
         },
-        body: qs.stringify({
+        body: new URLSearchParams({
             client_id,
             client_secret,
             refresh_token: user.googleDrive.refresh_token,
@@ -21,13 +20,14 @@ export async function refreshGoogleDriveToken(user) {
     });
 
     const data = await res.json();
+
     if (data.access_token) {
         await User.updateOne(
             { _id: user._id },
             {
                 "googleDrive.access_token": data.access_token,
                 "googleDrive.expires_at": Date.now() + data.expires_in * 1000,
-            }
+            },
         );
     }
 
@@ -35,14 +35,15 @@ export async function refreshGoogleDriveToken(user) {
 }
 
 export async function getValidAccessToken(user) {
-  if (!user.googleDrive) throw new Error("Google Drive not connected");
+    if (!user.googleDrive) throw new Error("Google Drive not connected");
 
-  const now = Date.now();
-  if (user.googleDrive.expires_at < now + 30000) {
-    return await refreshGoogleDriveToken(user);
-  }
+    const now = Date.now();
+    console.log(user.googleDrive.expires_at < now + 30000);
+    if (user.googleDrive.expires_at < now + 30000) {
+        return await refreshGoogleDriveToken(user);
+    }
 
-  return user.googleDrive.access_token;
+    return user.googleDrive.access_token;
 }
 
 export const exchangeCodeForTokens = async (code) => {
