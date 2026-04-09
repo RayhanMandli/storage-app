@@ -73,7 +73,7 @@ export const uploadFileController = async (req, res, next) => {
         const uploadStream = cloudinary.uploader.upload_stream(
             {
                 resource_type: resourceType,
-                public_id: new ObjectId().toString(), // temp id (optional)
+                public_id: `${new ObjectId().toString()}${extension}`, // temp id (optional)
             },
             async (error, result) => {
                 console.log("🔥 Cloudinary callback", { error, result });
@@ -152,6 +152,10 @@ export const serveFileController = async (req, res, next) => {
 
     try {
         const file = await File.findById(id);
+        const nameWithoutExt = file.filename.replace(/\.[^/.]+$/, "");
+        // remove {} or [] or () from filename to prevent issues in content-disposition
+        const sanitizedFilename = nameWithoutExt.replace(/[\{\}\[\]\(\)]/g, "");
+        const safeName = encodeURIComponent(sanitizedFilename);
 
         if (!file) {
             logSecurity("FILE_ACCESS_NOT_FOUND", {
@@ -166,10 +170,9 @@ export const serveFileController = async (req, res, next) => {
         let url = file.url;
         // 🔥 FORCE DOWNLOAD
         if (action === "download") {
-            console.log("replacing");
             url = url.replace(
                 "/upload/",
-                `/upload/fl_attachment:${file.filename.replace(".", "%252E")}/`,
+                `/upload/fl_attachment:${safeName}/`,
             );
         }
 
