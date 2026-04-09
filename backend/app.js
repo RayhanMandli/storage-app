@@ -27,6 +27,7 @@ app.use(
     })
 );
 app.use(helmet());
+app.set("trust proxy",1);
 app.use(globalLimiter);
 app.use(cookieParser(secret));
 app.use(express.json());
