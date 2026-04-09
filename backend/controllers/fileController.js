@@ -163,16 +163,6 @@ export const serveFileController = async (req, res, next) => {
             return res.status(404).json({ message: "File not found" });
         }
 
-        if (file.userId.toString() !== req.user._id.toString()) {
-            logSecurity("FILE_ACCESS_UNAUTHORIZED", {
-                userId: req.user._id,
-                fileId: id,
-                ownerId: file.userId,
-                ip: req.ip,
-            });
-            return res.status(403).json({ message: "Access denied" });
-        }
-
         let url = file.url;
         // 🔥 FORCE DOWNLOAD
         if (action === "download") {
