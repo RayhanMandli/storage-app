@@ -4,6 +4,7 @@ import cloudinary from "../services/cloudinary.js";
 
 //recursive directory deletion
 const deleteDirectory = async (dir) => {
+    const id = dir._id;
     async function recursiveDelete(directoryId) {
         // 1. delete subdirectories
         const subdirs = await Directory.find({ parentDirId: directoryId });
@@ -46,7 +47,6 @@ const deleteDirectory = async (dir) => {
         // 3. delete directory itself
         await Directory.deleteOne({ _id: directoryId });
     }
-
     try {
         await recursiveDelete(id);
         return { success: true, message: "Directory deleted successfully" };
