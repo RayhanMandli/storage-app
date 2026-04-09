@@ -24,10 +24,10 @@ export const getDirectoryController = async (req, res) => {
     if (!targetUser) {
         return res.status(404).json({ message: "User not found" });
     }
-
-    const dirid = req.params.id
+    let dirid = req.params.id
         ? req.params.id
         : targetUser.rootDirId;
+    if(dirid === 'root') dirid = targetUser.rootDirId;
     const directoryData = await Directory.findById(dirid).populate({path: "path", select: "name"});
 
     if (!directoryData)
