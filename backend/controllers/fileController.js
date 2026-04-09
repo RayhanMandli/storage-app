@@ -1,4 +1,4 @@
-import { createWriteStream } from "fs";
+import cloudinary from "../services/cloudinary.js";
 import path from "path";
 import { ObjectId } from "mongodb";
 import { File } from "../models/fileModel.js";
@@ -9,7 +9,6 @@ import {
     logInfo,
 } from "../utils/logger.js";
 import domPurifier from "../utils/dompurifier.js";
-import { rm, stat } from "fs/promises";
 import { Directory } from "../models/directoryModel.js";
 import mongoose from "mongoose";
 
@@ -32,7 +31,10 @@ async function parentDirArrayBuilder(dirId, parents) {
 
 export const uploadFileController = async (req, res, next) => {
     try {
+        req.on("data", () => console.log("📦 receiving data"));
+        req.on("end", () => console.log("✅ request ended"));
         let parentDirId = req.headers["parentdirid"];
+        const mime = req.headers["x-file-type"];
         const filesize = Number(req.headers["filesize"]);
 
         if (!Number.isFinite(filesize)) {
@@ -61,82 +63,73 @@ export const uploadFileController = async (req, res, next) => {
             return res.status(400).json({ message: "Invalid filename" });
         }
 
-        const session = await mongoose.startSession();
+        // 🔥 detect resource type
+        let resourceType = "auto";
+        if (mime?.startsWith("video/")) resourceType = "video";
+        else if (mime?.startsWith("image/")) resourceType = "image";
+        else resourceType = "raw";
 
-        session.startTransaction();
-        let newFile;
+        // 🚀 START STREAM IMMEDIATELY
+        const uploadStream = cloudinary.uploader.upload_stream(
+            {
+                resource_type: resourceType,
+                public_id: new ObjectId().toString(), // temp id (optional)
+            },
+            async (error, result) => {
+                console.log("🔥 Cloudinary callback", { error, result });
+                if (error) return next(error);
 
-        // Upload file and update directory sizes atomically
-        try {
-            newFile = await File.insertOne(
-                {
-                    filename,
-                    filesize,
-                    extension,
-                    parentDirId,
-                    userId: req.user._id,
-                },
-                { session }
-            );
-            const parents = [];
-            await parentDirArrayBuilder(parentDirId, parents);
-            await Directory.updateMany(
-                { _id: { $in: parents } },
-                { $inc: { size: filesize } },
-                { session }
-            );
-            await session.commitTransaction();
-        } catch (err) {
-            await session.abortTransaction();
-            throw err;
-        }finally{
-            session.endSession();
-        }
+                try {
+                    // 🔥 NOW do DB work (safe)
+                    const session = await mongoose.startSession();
+                    session.startTransaction();
 
-        const fileNameWithID = `${newFile._id}${extension}`;
-        const filePath = path.join(process.cwd(), "storage", fileNameWithID);
-        const writeStream = createWriteStream(filePath);
+                    let newFile;
 
-        let receivedBytes = 0;
-        let aborted = false;
+                    try {
+                        newFile = await File.create(
+                            [
+                                {
+                                    filename,
+                                    filesize,
+                                    extension,
+                                    parentDirId,
+                                    userId: req.user._id,
+                                    cloudinaryPublicId: result.public_id,
+                                    url: result.secure_url,
+                                },
+                            ],
+                            { session },
+                        );
 
-        req.on("data", (chunk) => {
-            if (aborted) return;
+                        const parents = [];
+                        await parentDirArrayBuilder(parentDirId, parents);
 
-            receivedBytes += chunk.length;
+                        await Directory.updateMany(
+                            { _id: { $in: parents } },
+                            { $inc: { size: filesize } },
+                            { session },
+                        );
 
-            if (receivedBytes > maxLimit.file) {
-                aborted = true;
-                res.status(413).json({
-                    message: `File size exceeds ${maxLimit.file} bytes`,
-                });
+                        await session.commitTransaction();
+                    } catch (err) {
+                        await session.abortTransaction();
+                        throw err;
+                    } finally {
+                        session.endSession();
+                    }
 
-                writeStream.destroy();
-                File.deleteOne({ _id: newFile._id }).catch(() => {});
-                rm(filePath).catch(() => {});
-                return req.destroy();
-            }
+                    return res.status(200).json({
+                        message: "File uploaded successfully",
+                    });
+                } catch (err) {
+                    return next(err);
+                }
+            },
+        );
 
-            if (!writeStream.write(chunk)) {
-                req.pause();
-                writeStream.once("drain", () => req.resume());
-            }
-        });
-
-        req.on("end", () => writeStream.end());
-
-        req.on("error", () => {
-            writeStream.destroy();
-        });
-
-        writeStream.on("error", async () => {
-            await File.deleteOne({ _id: newFile._id }).catch(() => {});
-            res.status(500).json({ message: "File upload failed" });
-        });
-
-        writeStream.on("finish", () => {
-            res.status(200).json({ message: "File uploaded successfully" });
-        });
+        // 🔥 PIPE IMMEDIATELY
+        req.pipe(uploadStream);
     } catch (err) {
         next(err);
     }
@@ -146,7 +139,7 @@ export const serveFileController = async (req, res, next) => {
     const { id } = req.params;
     const { action } = req.query;
 
-    // Validate file ID format
+    // Validate file ID
     if (!ObjectId.isValid(id)) {
         logSecurity("FILE_ACCESS_INVALID_ID", {
             userId: req.user._id,
@@ -158,7 +151,6 @@ export const serveFileController = async (req, res, next) => {
     }
 
     try {
-        // Find file in database
         const file = await File.findById(id);
 
         if (!file) {
@@ -171,40 +163,37 @@ export const serveFileController = async (req, res, next) => {
             return res.status(404).json({ message: "File not found" });
         }
 
-        // Set appropriate headers for download
+        if (file.userId.toString() !== req.user._id.toString()) {
+            logSecurity("FILE_ACCESS_UNAUTHORIZED", {
+                userId: req.user._id,
+                fileId: id,
+                ownerId: file.userId,
+                ip: req.ip,
+            });
+            return res.status(403).json({ message: "Access denied" });
+        }
+
+        let url = file.url;
+        // 🔥 FORCE DOWNLOAD
         if (action === "download") {
-            res.set(
-                "Content-Disposition",
-                `attachment; filename="${file.filename}"`
+            console.log("replacing");
+            url = url.replace(
+                "/upload/",
+                `/upload/fl_attachment:${file.filename.replace(".", "%252E")}/`,
             );
         }
 
-        // Construct safe file path
-        const filePath = `${process.cwd()}/storage/${id}${file.extension}`;
-        // Log file access
+        // 📊 logging
         logFileOperation(
             action === "download" ? "download" : "view",
             req.user._id,
             id,
             file.filename,
-            true
+            true,
         );
 
-        // Send file to client
-        res.sendFile(filePath, (error) => {
-            if (error) {
-                logError("File send error", error, {
-                    userId: req.user._id,
-                    fileId: id,
-                    filename: file.filename,
-                    filePath,
-                });
-
-                if (!res.headersSent) {
-                    res.status(500).json({ message: "Error serving file" });
-                }
-            }
-        });
+        // 🚀 REDIRECT TO CLOUDINARY
+        return res.redirect(url);
     } catch (error) {
         logError("File serve error", error, {
             userId: req.user._id,
@@ -283,7 +272,7 @@ export const renameFileController = async (req, res, next) => {
         const updatedFile = await File.findByIdAndUpdate(
             { _id: id },
             { filename: newName.trim() },
-            { new: true }
+            { new: true },
         );
 
         if (!updatedFile) {

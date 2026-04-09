@@ -3,6 +3,8 @@
     "dependencies": {
         "@types/node": "^24.5.2",
         "bcrypt": "^6.0.0",
+        "busboy": "^1.6.0",
+        "cloudinary": "^2.9.0",
         "cookie-parser": "^1.4.7",
         "cors": "^2.8.5",
         "crypto": "^1.0.1",

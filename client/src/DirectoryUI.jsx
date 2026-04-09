@@ -161,6 +161,7 @@ function DirectoryUI() {
                     "Content-Type": "application/octet-stream",
                     parentdirid: pId || "root",
                     filesize: file.size,
+                    "X-File-Type": file.type,
                 },
                 credentials: "include",
                 body: file,

@@ -69,6 +69,7 @@ export default function FileRow({
                     <a
                         className="text-sm font-medium text-zinc-100 hover:text-cyan-400 transition-colors truncate"
                         href={viewHref}
+                        target="_blank"
                     >
                         {name}
                     </a>

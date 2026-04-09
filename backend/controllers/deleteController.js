@@ -1,90 +1,132 @@
-import { rm } from "fs/promises";
 import { Directory } from "../models/directoryModel.js";
 import { File } from "../models/fileModel.js";
+import cloudinary from "../services/cloudinary.js";
 
 //recursive directory deletion
-const deleteDirectory = async (id, next) => {
-  const dir = await Directory.findById(id);
-
-  if (!dir) return { success: false, message: "Directory not found" };
-
-  try {
+const deleteDirectory = async (dir) => {
     async function recursiveDelete(directoryId) {
-      try {
-        // 1. Delete all subdirectories recursively
-        const subdirs = await Directory.find({
-          parentDirId: directoryId,
-        });
+        // 1. delete subdirectories
+        const subdirs = await Directory.find({ parentDirId: directoryId });
+
         for (const subdir of subdirs) {
-          await recursiveDelete(subdir._id);
+            await recursiveDelete(subdir._id);
         }
 
-        // 2. Delete all files in this directory
+        // 2. delete files in this directory
         const files = await File.find({ parentDirId: directoryId });
+
         for (const file of files) {
-          try {
-            await rm(`./storage/${file._id}${file.extension}`, {
-              force: true,
-            });
-            await File.deleteOne({ _id: file._id });
-          } catch (err) {
-            console.error("Error deleting file:", err);
-          }
+            try {
+                let resourseType = null;
+                //type by extesion
+                if (
+                    [".png", ".jpg", ".jpeg", ".webp"].includes(file.extension)
+                ) {
+                    resourseType = "image";
+                } else if (
+                    [".mp4", ".avi", ".mov", ".mkv"].includes(file.extension)
+                ) {
+                    resourseType = "video";
+                } else {
+                    resourseType = "raw";
+                }
+
+                if (file.cloudinaryPublicId) {
+                    await cloudinary.uploader.destroy(file.cloudinaryPublicId, {
+                        resource_type: resourseType,
+                    });
+                }
+
+                await File.deleteOne({ _id: file._id });
+            } catch (err) {
+                console.error("Error deleting file:", err);
+            }
         }
 
-        // 3. Delete this directory
+        // 3. delete directory itself
         await Directory.deleteOne({ _id: directoryId });
-      } catch (err) {
-        console.error("Error deleting directory:", err);
-        throw err;
-      }
     }
 
-    // Usage
-    await recursiveDelete(id);
-    return { success: true, message: "Directory deleted successfully" };
-  } catch (e) {
-    next(e);
-  }
+    try {
+        await recursiveDelete(id);
+        return { success: true, message: "Directory deleted successfully" };
+    } catch (e) {
+        return { success: false, message: e.message };
+    }
 };
 
-const deleteFile = async (id, next) => {
-  const file = await File.findById(id);
-  const { extension } = file;
-  if (!file) return { success: false, message: "File not found" };
+const deleteFile = async (file) => {
+    try {
+        // 🔥 delete from cloudinary
+        let resourseType = null;
+        //type by extesion
+        if ([".png", ".jpg", ".jpeg", ".webp"].includes(file.extension)) {
+            resourseType = "image";
+        } else if ([".mp4", ".avi", ".mov", ".mkv"].includes(file.extension)) {
+            resourseType = "video";
+        } else {
+            resourseType = "raw";
+        }
 
-  try {
-    await rm(`./storage/${id}${extension}`, {
-      force: true,
-    });
-    await File.deleteOne({ _id: file._id });
-    return { success: true, message: "file deleted" };
-  } catch (e) {
-    return { success: false, message: e.message };
-    next(e);
-  }
+        if (file.cloudinaryPublicId) {
+            const result = await cloudinary.uploader.destroy(
+                file.cloudinaryPublicId,
+                { resource_type: resourseType },
+            );
+
+            if (result.result !== "ok" && result.result !== "not found") {
+                return { success: false, message: "Cloud delete failed" };
+            }
+        }
+
+        //deducting the size from every parent directory
+        
+
+        // 🔥 delete from DB
+        await File.deleteOne({ _id: file._id });
+
+        
+
+
+        return { success: true, message: "File deleted" };
+    } catch (e) {
+        return { success: false, message: e.message };
+    }
 };
 
 export const deleteController = async (req, res, next) => {
-  const { type } = req.query;
-  const { id } = req.params;
-  // console.log(id);
+    const { type } = req.query;
+    const { id } = req.params;
 
-  if (type === "file") {
-    const result = await deleteFile(id, next);
-    if (!result.success) {
-      return res.status(500).json({ message: result.message });
-    }
-    res.status(200).json({ message: result.message });
-  } else {
-    const result = await deleteDirectory(id, next);
     try {
-      if (!result.success) {
-        return res.status(500).json({ message: result.message });
-      }
-      res.status(200).json({ message: result.message });
+        let result;
+
+        if (type === "file") {
+            const file = await File.findById(id);
+            if (!file) {
+                return res.status(404).json({ message: "File not found" });
+            }
+            if (file.userId.toString() !== req.user._id.toString()) {
+                return res.status(403).json({ message: "Access denied" });
+            }
+            result = await deleteFile(file);
+        } else {
+            const dir = await Directory.findById(id);
+            if (!dir) {
+                return res.status(404).json({ message: "Directory not found" });
+            }
+            if (dir.userId.toString() !== req.user._id.toString()) {
+                return res.status(403).json({ message: "Access denied" });
+            }
+            result = await deleteDirectory(dir);
+        }
+
+        if (!result.success) {
+            return res.status(500).json({ message: result.message });
+        }
+
+        return res.status(200).json({ message: result.message });
     } catch (e) {
-      res.status(500).json({ message: e.message });
+        next(e);
     }
-  }
 };

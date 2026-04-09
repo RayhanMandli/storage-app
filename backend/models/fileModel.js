@@ -12,6 +12,15 @@ const fileSchema = new Schema(
             required: true,
             match: [/\.([a-zA-Z0-9]+)$/, "Invalid file extension"],
         },
+        cloudinaryPublicId: {
+            type: String,
+            default: null,
+            
+        },
+        url:{
+            type: String,
+            default: null,
+        },
         filesize: {
             type: Number,
             required: true,

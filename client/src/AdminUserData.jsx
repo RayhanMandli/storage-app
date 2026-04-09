@@ -184,6 +184,7 @@ export default function AdminUserData() {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/octet-stream",
+                        "X-File-Type": file.type,
                         parentdirid: pId || "root",
                     },
                     credentials: "include",
