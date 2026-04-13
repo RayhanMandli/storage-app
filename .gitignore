@@ -7,6 +7,10 @@ node_modules/
 # Environment files
 .env
 
+# IDE specific
+.vscode/
+client/*.md
+
 #Uploads
 storage/
 storage copy/

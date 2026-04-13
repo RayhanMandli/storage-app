@@ -53,7 +53,7 @@ export const exchangeCodeForTokens = async (code) => {
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded",
             },
-            body: qs.stringify({
+           body: new URLSearchParams({
                 code,
                 client_id,
                 client_secret,
