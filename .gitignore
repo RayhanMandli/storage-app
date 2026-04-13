@@ -11,9 +11,6 @@ node_modules/
 .vscode/
 client/*.md
 
-#Uploads
-storage/
-storage copy/
 
 # Build/Dist output
 dist/
