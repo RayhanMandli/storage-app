@@ -124,7 +124,7 @@ export function NotificationBell() {
       </button>
 
       {open ? (
-        <div className="absolute right-0 z-40 mt-2 w-[340px] rounded-2xl border border-white/10 bg-zinc-900/95 p-3 shadow-2xl backdrop-blur-xl">
+        <div className="fixed left-1/2 top-20 z-40 w-[calc(100vw-1.25rem)] max-w-[340px] -translate-x-1/2 rounded-2xl border border-white/10 bg-zinc-900/95 p-3 shadow-2xl backdrop-blur-xl md:absolute md:left-auto md:right-0 md:top-auto md:mt-2 md:w-[340px] md:translate-x-0">
           <div className="mb-2 flex items-center justify-between">
             <p className="text-sm font-semibold text-zinc-100">Notifications</p>
             <button
