@@ -15,16 +15,15 @@ const fileSchema = new Schema(
         cloudinaryPublicId: {
             type: String,
             default: null,
-            
         },
-        url:{
+        url: {
             type: String,
             default: null,
         },
         filesize: {
             type: Number,
             required: true,
-            min:0,
+            min: 0,
         },
         parentDirId: {
             type: Schema.Types.ObjectId,
@@ -62,10 +61,23 @@ const fileSchema = new Schema(
             type: Boolean,
             default: false,
         },
+        summary: {
+            type: String,
+            default: null,
+        },
+        tags: {
+            type: [String],
+            default: [],
+        },
+        aiStatus: {
+            type: String,
+            enum: ["pending", "completed", "failed", "skipped"],
+            default: "pending",
+        },
     },
     {
         timestamps: true,
-    }
+    },
 );
 
 export const File = model("File", fileSchema);

@@ -57,6 +57,15 @@ export function FileGrid({ files = [], directories = [], currentDirId, onDelete 
           </div>
           <p className="mb-1 truncate text-sm font-semibold">{file.filename}</p>
           <p className="mb-4 text-xs text-zinc-400">{bytesToHuman(file.filesize)}</p>
+          {Array.isArray(file.tags) && file.tags.length ? (
+            <div className="mb-3 flex flex-wrap gap-1.5">
+              {file.tags.slice(0, 3).map((tag) => (
+                <span key={`${file._id}-${tag}`} className="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[10px] text-zinc-300">
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          ) : null}
           <div className="flex gap-2">
             <button
               className="rounded-lg bg-white/5 px-3 py-1.5 text-xs hover:bg-white/10"

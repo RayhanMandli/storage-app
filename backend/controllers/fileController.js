@@ -11,6 +11,7 @@ import {
 import domPurifier from "../utils/dompurifier.js";
 import { Directory } from "../models/directoryModel.js";
 import mongoose from "mongoose";
+import { processFileAiMetadata } from "../services/fileAiMetadataService.js";
 
 const maxLimit = {
     file: 100 * 1024 * 1024, // 100 MB
@@ -31,8 +32,6 @@ async function parentDirArrayBuilder(dirId, parents) {
 
 export const uploadFileController = async (req, res, next) => {
     try {
-        req.on("data", () => console.log("📦 receiving data"));
-        req.on("end", () => console.log("✅ request ended"));
         let parentDirId = req.headers["parentdirid"];
         const mime = req.headers["x-file-type"];
         const filesize = Number(req.headers["filesize"]);
@@ -76,7 +75,6 @@ export const uploadFileController = async (req, res, next) => {
                 public_id: `${new ObjectId().toString()}${extension}`, // temp id (optional)
             },
             async (error, result) => {
-                console.log("🔥 Cloudinary callback", { error, result });
                 if (error) return next(error);
 
                 try {
@@ -97,6 +95,9 @@ export const uploadFileController = async (req, res, next) => {
                                     userId: req.user._id,
                                     cloudinaryPublicId: result.public_id,
                                     url: result.secure_url,
+                                    aiStatus: "pending",
+                                    summary: null,
+                                    tags: [],
                                 },
                             ],
                             { session },
@@ -119,9 +120,16 @@ export const uploadFileController = async (req, res, next) => {
                         session.endSession();
                     }
 
-                    return res.status(200).json({
+                    res.status(200).json({
                         message: "File uploaded successfully",
                     });
+
+                    // Run AI processing in the background; upload response must stay fast.
+                      await processFileAiMetadata(newFile[0]._id).catch((err) => {
+                            logError("Background AI processing task failed", err, {
+                                fileId: String(newFile[0]._id),
+                            });
+                        });
                 } catch (err) {
                     return next(err);
                 }
