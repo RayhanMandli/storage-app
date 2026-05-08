@@ -40,30 +40,29 @@ export const userRegister = async (req, res) => {
 
     try {
         session.startTransaction();
-        // Create root directory for the new user
-        const newRootDir = await Directory(
-            {
-                name: `root-${email}`,
-            },
-            { session },
-        );
-        const rootDirId = newRootDir._id;
-        newRootDir.path.push(newRootDir._id);
-        // Create new user with hashed password
-        const newUser = await User(
-            {
-                rootDirId,
-                name,
-                email,
-                password,
-            },
-            { session },
-        );
-        await newUser.save();
+        // Pre-generate ids to avoid circular required fields and ensure defaults
+        const userId = new mongoose.Types.ObjectId();
+        const rootDirId = new mongoose.Types.ObjectId();
 
-        // Link root directory to user
-        newRootDir.userId = newUser._id;
-        await newRootDir.save();
+        // Create new user and root directory using `new` so defaults/hooks apply
+        const newUser = new User({
+            _id: userId,
+            rootDirId,
+            name,
+            email,
+            password,
+        });
+
+        const newRootDir = new Directory({
+            _id: rootDirId,
+            name: `root-${email}`,
+            userId,
+            path: [rootDirId],
+        });
+
+        // Save both documents inside the transaction
+        await newUser.save({ session });
+        await newRootDir.save({ session });
         await session.commitTransaction();
         await session.endSession();
         // Log successful registration
@@ -123,6 +122,7 @@ export const userLogin = async (req, res) => {
         }
 
         const { sessionId } = await createSession(redisClient, user._id.toString());
+        
         // Set secure cookie with session ID
         res.cookie("sid", sessionId, {
             maxAge: 24 * 60 * 60 * 1000, // 24 hours
@@ -244,23 +244,25 @@ export const handleGoogleLogin = async (req, res) => {
         });
     }
     if (!user) {
-        // Create root directory for the new user
-        const newRootDir = await Directory({
-            name: `root-${email}`,
-        });
-        const rootDirId = newRootDir._id;
+        const userId = new mongoose.Types.ObjectId();
+        const rootDirId = new mongoose.Types.ObjectId();
 
-        // Create new user with hashed password
-        const newUser = await User({
+        const newUser = new User({
+            _id: userId,
             rootDirId,
             name,
             googleId,
             email,
         });
-        await newUser.save();
 
-        // Link root directory to user
-        newRootDir.userId = newUser._id;
+        const newRootDir = new Directory({
+            _id: rootDirId,
+            name: `root-${email}`,
+            userId,
+            path: [rootDirId],
+        });
+
+        await newUser.save();
         await newRootDir.save();
 
         // Log successful registration
@@ -344,23 +346,25 @@ export const handleGithubLogin = async (req, res) => {
 
     const user = await User.findOne({ email });
     if (!user) {
-        // Create root directory for the new user
-        const newRootDir = await Directory({
-            name: `root-${email}`,
-        });
-        const rootDirId = newRootDir._id;
+        const userId = new mongoose.Types.ObjectId();
+        const rootDirId = new mongoose.Types.ObjectId();
 
-        // Create new user with hashed password
-        const newUser = await User({
+        const newUser = new User({
+            _id: userId,
             rootDirId,
             name,
             githubId,
             email,
         });
-        await newUser.save();
 
-        // Link root directory to user
-        newRootDir.userId = newUser._id;
+        const newRootDir = new Directory({
+            _id: rootDirId,
+            name: `root-${email}`,
+            userId,
+            path: [rootDirId],
+        });
+
+        await newUser.save();
         await newRootDir.save();
 
         // Log successful registration
